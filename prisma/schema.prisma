@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StaffRole {
+  ADMIN
+  EMPLOYEE
+  RECEPTIONIST
+}
+
+enum VisitStatus {
+  INVITED
+  ACCEPTED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+  EXPIRED
+}
+
+model Staff {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         StaffRole @default(EMPLOYEE)
+  createdAt    DateTime  @default(now())
+
+  hostedVisits  Visit[] @relation("HostEmployee")
+  createdVisits Visit[] @relation("CreatedByStaff")
+}
+
+model Visitor {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  company   String?
+  createdAt DateTime @default(now())
+
+  visits Visit[]
+}
+
+model Visit {
+  id             String      @id @default(cuid())
+  visitor        Visitor     @relation(fields: [visitorId], references: [id])
+  visitorId      String
+  hostEmployee   Staff       @relation("HostEmployee", fields: [hostEmployeeId], references: [id])
+  hostEmployeeId String
+  createdBy      Staff?      @relation("CreatedByStaff", fields: [createdById], references: [id])
+  createdById    String?
+
+  visitReason String
+  scheduledAt DateTime
+  status      VisitStatus @default(INVITED)
+
+  accessToken    String   @unique
+  tokenExpiresAt DateTime
+
+  invitedAt    DateTime  @default(now())
+  acceptedAt   DateTime?
+  checkedInAt  DateTime?
+  checkedOutAt DateTime?
+}
