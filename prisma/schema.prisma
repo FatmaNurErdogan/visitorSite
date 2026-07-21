@@ -8,33 +8,24 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlserver"
   url      = env("DATABASE_URL")
 }
 
-enum StaffRole {
-  ADMIN
-  EMPLOYEE
-  RECEPTIONIST
-}
+// SQL Server sabit değer listesini (enum) desteklemiyor, o yüzden role/status
+// alanlarını metin (String) olarak tutuyoruz. Geçerli değerler şunlar:
 
-enum VisitStatus {
-  PENDING     // ziyaretçi talep oluşturdu, çalışanın onayı bekleniyor
-  ACCEPTED    // çalışan onayladı
-  REJECTED    // çalışan reddetti
-  CHECKED_IN  // ziyaretçi içeri girdi
-  CHECKED_OUT // ziyaretçi çıktı
-  CANCELLED   // ziyaretçi kendi talebini iptal etti
-  EXPIRED     // link/talep süresi doldu
-}
+// StaffRole: "ADMIN" | "EMPLOYEE" | "RECEPTIONIST"
+// VisitStatus: "PENDING" (onay bekliyor) | "ACCEPTED" (onaylandı) | "REJECTED" (reddedildi)
+//   | "CHECKED_IN" (içeri girdi) | "CHECKED_OUT" (çıktı) | "CANCELLED" (iptal edildi) | "EXPIRED" (süresi doldu)
 
 model Staff {
-  id           String    @id @default(cuid())
+  id           String   @id @default(cuid())
   name         String
-  email        String    @unique
+  email        String   @unique
   passwordHash String
-  role         StaffRole @default(EMPLOYEE)
-  createdAt    DateTime  @default(now())
+  role         String   @default("EMPLOYEE")
+  createdAt    DateTime @default(now())
 
   hostedVisits Visit[] @relation("HostEmployee")
 }
@@ -51,15 +42,15 @@ model Visitor {
 }
 
 model Visit {
-  id             String      @id @default(cuid())
-  visitor        Visitor     @relation(fields: [visitorId], references: [id])
+  id             String   @id @default(cuid())
+  visitor        Visitor  @relation(fields: [visitorId], references: [id])
   visitorId      String
-  hostEmployee   Staff       @relation("HostEmployee", fields: [hostEmployeeId], references: [id])
+  hostEmployee   Staff    @relation("HostEmployee", fields: [hostEmployeeId], references: [id])
   hostEmployeeId String
 
   visitReason String
   scheduledAt DateTime
-  status      VisitStatus @default(PENDING)
+  status      String   @default("PENDING")
 
   accessToken    String   @unique
   tokenExpiresAt DateTime
