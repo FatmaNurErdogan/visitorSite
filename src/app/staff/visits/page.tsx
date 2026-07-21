@@ -4,7 +4,7 @@
 export default function StaffVisitsPage() {
   return (
     <main className="staff-visits-page">
-      <h1>Ziyaretler</h1>
+      <h1>Visits</h1>
     </main>
   );
 }

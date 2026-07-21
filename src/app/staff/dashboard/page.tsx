@@ -5,7 +5,7 @@
 export default function StaffDashboardPage() {
   return (
     <main className="staff-dashboard-page">
-      <h1>Panel</h1>
+      <h1>Dashboard</h1>
     </main>
   );
 }

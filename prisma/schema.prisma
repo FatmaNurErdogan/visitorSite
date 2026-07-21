@@ -19,12 +19,13 @@ enum StaffRole {
 }
 
 enum VisitStatus {
-  INVITED
-  ACCEPTED
-  CHECKED_IN
-  CHECKED_OUT
-  CANCELLED
-  EXPIRED
+  PENDING     // ziyaretçi talep oluşturdu, çalışanın onayı bekleniyor
+  ACCEPTED    // çalışan onayladı
+  REJECTED    // çalışan reddetti
+  CHECKED_IN  // ziyaretçi içeri girdi
+  CHECKED_OUT // ziyaretçi çıktı
+  CANCELLED   // ziyaretçi kendi talebini iptal etti
+  EXPIRED     // link/talep süresi doldu
 }
 
 model Staff {
@@ -35,8 +36,7 @@ model Staff {
   role         StaffRole @default(EMPLOYEE)
   createdAt    DateTime  @default(now())
 
-  hostedVisits  Visit[] @relation("HostEmployee")
-  createdVisits Visit[] @relation("CreatedByStaff")
+  hostedVisits Visit[] @relation("HostEmployee")
 }
 
 model Visitor {
@@ -56,18 +56,16 @@ model Visit {
   visitorId      String
   hostEmployee   Staff       @relation("HostEmployee", fields: [hostEmployeeId], references: [id])
   hostEmployeeId String
-  createdBy      Staff?      @relation("CreatedByStaff", fields: [createdById], references: [id])
-  createdById    String?
 
   visitReason String
   scheduledAt DateTime
-  status      VisitStatus @default(INVITED)
+  status      VisitStatus @default(PENDING)
 
   accessToken    String   @unique
   tokenExpiresAt DateTime
 
-  invitedAt    DateTime  @default(now())
-  acceptedAt   DateTime?
+  requestedAt  DateTime  @default(now()) // ziyaretçi talebi ne zaman oluşturdu
+  respondedAt  DateTime? // çalışan ne zaman onayladı/reddetti
   checkedInAt  DateTime?
   checkedOutAt DateTime?
 }

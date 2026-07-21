@@ -1,7 +1,7 @@
-// Bu dosya TÜM sayfaların ortak kalıbı. Her sayfa açıldığında önce bu çalışır,
-// içine gelen "children" o an açık olan sayfa (page.tsx) oluyor.
-// globals.css'i buradan import ediyoruz ki tüm sayfalarda geçerli olsun.
-// Ortak header/menü gibi bir şey eklemek istersek buraya koyacağız.
+// This file is the shared shell for ALL pages. It runs before every page,
+// and "children" is whichever page (page.tsx) is currently open.
+// We import globals.css here so it applies to every page.
+// If we want a shared header/nav later, it goes here.
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ziyaretçi Yönetim Sistemi",
-  description: "Uzser için ziyaretçi yönetim sistemi",
+  title: "Visitor Management System",
+  description: "Visitor management system for Uzser",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>{children}</body>
     </html>
   );
