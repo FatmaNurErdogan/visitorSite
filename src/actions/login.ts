@@ -10,11 +10,12 @@ export async function loginAction(_prevState: string | undefined, formData: Form
     await signIn("credentials", {
       email: formData.get("email"),
       password: formData.get("password"),
+      expectedRole: formData.get("expectedRole"),
       redirectTo: "/staff/dashboard",
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return "Invalid email or password.";
+      return "Invalid email or password, or this account doesn't have access from this login.";
     }
     throw error;
   }

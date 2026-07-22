@@ -1,19 +1,39 @@
-import { prisma } from "@/lib/prisma";
-import { VisitRequestForm } from "@/components/VisitRequestForm";
+// Home page — a landing screen with 3 entry points depending on who's
+// looking at it. Visitor goes to the public request form; Employee and
+// Receptionist go to the same login page but with a different `as` query
+// param, so an employee account can't log in through the receptionist
+// door and vice versa (enforced in src/auth.ts).
+import Link from "next/link";
 
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-  const hosts = await prisma.staff.findMany({
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
-
+export default function Home() {
   return (
     <main className="page-container">
-      <h1>Request a visit</h1>
-      <p>Let us know who you&apos;re visiting and when, and we&apos;ll pass it along for approval.</p>
-      <VisitRequestForm hosts={hosts} />
+      <h1>Visitor Management System</h1>
+      <p>Please select who you are:</p>
+
+      <div className="card">
+        <h2>Visitor</h2>
+        <p>Request a visit to see one of our employees.</p>
+        <Link className="btn btn-primary" href="/visitor">
+          I&apos;m a Visitor
+        </Link>
+      </div>
+
+      <div className="card">
+        <h2>Employee</h2>
+        <p>Log in to approve or reject visit requests.</p>
+        <Link className="btn btn-primary" href="/login?as=employee">
+          I&apos;m an Employee
+        </Link>
+      </div>
+
+      <div className="card">
+        <h2>Receptionist</h2>
+        <p>Log in to check visitors in and out.</p>
+        <Link className="btn btn-primary" href="/login?as=receptionist">
+          I&apos;m a Receptionist
+        </Link>
+      </div>
     </main>
   );
 }

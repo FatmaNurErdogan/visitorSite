@@ -15,10 +15,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: {},
         password: {},
+        expectedRole: {},
       },
       async authorize(credentials) {
         const email = credentials?.email as string | undefined;
         const password = credentials?.password as string | undefined;
+        // Hangi kapıdan giriş yapılmaya çalışıldığı ("employee" veya "receptionist").
+        // Home sayfasındaki linkler bunu /login?as=... ile taşıyor.
+        const expectedRole = credentials?.expectedRole as string | undefined;
         if (!email || !password) return null;
 
         const staff = await prisma.staff.findUnique({ where: { email } });
@@ -26,6 +30,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const passwordMatches = await bcrypt.compare(password, staff.passwordHash);
         if (!passwordMatches) return null;
+
+        // ADMIN her iki kapıdan da girebilir. EMPLOYEE sadece "employee" kapısından,
+        // RECEPTIONIST sadece "receptionist" kapısından girebilir.
+        if (
+          expectedRole &&
+          staff.role !== "ADMIN" &&
+          staff.role.toLowerCase() !== expectedRole.toLowerCase()
+        ) {
+          return null;
+        }
 
         return {
           id: staff.id,

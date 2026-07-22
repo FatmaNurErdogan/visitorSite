@@ -1,35 +1,15 @@
-"use client";
-
-// /login adresinde açılır. Personel (resepsiyon/employee/admin) buradan
-// email + şifre ile giriş yapıyor. Ziyaretçiler bu sayfayı hiç görmeyecek,
-// onlar kendi linkinden (/visit/[token]) giriyor.
-import { useActionState } from "react";
-import { loginAction } from "@/actions/login";
+// /login — staff (employee/receptionist/admin) sign in here with email + password.
+// Visitors never see this page, they use the public /visitor form instead.
+// The `as` query param (?as=employee or ?as=receptionist) records which door
+// they came through, so we can block employee accounts from the receptionist
+// entrance and vice versa (checked in src/auth.ts's authorize()).
+import { Suspense } from "react";
+import { LoginForm } from "./LoginForm";
 
 export default function LoginPage() {
-  const [errorMessage, formAction, isPending] = useActionState(loginAction, undefined);
-
   return (
-    <main className="page-container">
-      <h1>Login</h1>
-      <form action={formAction}>
-        <div className="form-group">
-          <label className="form-label" htmlFor="email">
-            Email
-          </label>
-          <input className="form-input" id="email" name="email" type="email" required />
-        </div>
-        <div className="form-group">
-          <label className="form-label" htmlFor="password">
-            Password
-          </label>
-          <input className="form-input" id="password" name="password" type="password" required />
-        </div>
-        {errorMessage && <p>{errorMessage}</p>}
-        <button className="btn btn-primary" type="submit" disabled={isPending}>
-          {isPending ? "Logging in..." : "Login"}
-        </button>
-      </form>
-    </main>
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
