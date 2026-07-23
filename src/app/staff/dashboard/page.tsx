@@ -46,6 +46,12 @@ export default async function StaffDashboardPage() {
       <h1>Dashboard</h1>
       <p>
         <Link href="/staff/visits">All visits</Link> &middot; <Link href="/staff/visits/new">Log a walk-in</Link>
+        {role === "ADMIN" && (
+          <>
+            {" "}
+            &middot; <Link href="/staff/staff-users">Staff accounts</Link>
+          </>
+        )}
       </p>
 
       {showApprovals && (
