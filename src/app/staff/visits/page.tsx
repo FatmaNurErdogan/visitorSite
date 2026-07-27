@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { approveVisit, rejectVisit, checkInVisit, checkOutVisit } from "@/actions/visits";
 import { StatusBadge } from "@/components/StatusBadge";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const STATUSES = ["PENDING", "ACCEPTED", "REJECTED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED", "EXPIRED"];
 
@@ -76,29 +77,29 @@ export default async function StaffVisitsPage({
                 {visit.status === "PENDING" && canRespond(visit.hostEmployeeId) && (
                   <>
                     <form action={approveVisit.bind(null, visit.id)} style={{ display: "inline" }}>
-                      <button className="btn btn-success" type="submit">
+                      <SubmitButton className="btn btn-success" pendingText="Approving...">
                         Approve
-                      </button>
+                      </SubmitButton>
                     </form>{" "}
                     <form action={rejectVisit.bind(null, visit.id)} style={{ display: "inline" }}>
-                      <button className="btn btn-danger" type="submit">
+                      <SubmitButton className="btn btn-danger" pendingText="Rejecting...">
                         Reject
-                      </button>
+                      </SubmitButton>
                     </form>
                   </>
                 )}
                 {visit.status === "ACCEPTED" && canCheckInOut && (
                   <form action={checkInVisit.bind(null, visit.id)}>
-                    <button className="btn btn-primary" type="submit">
+                    <SubmitButton className="btn btn-primary" pendingText="Checking in...">
                       Check in
-                    </button>
+                    </SubmitButton>
                   </form>
                 )}
                 {visit.status === "CHECKED_IN" && canCheckInOut && (
                   <form action={checkOutVisit.bind(null, visit.id)}>
-                    <button className="btn btn-primary" type="submit">
+                    <SubmitButton className="btn btn-primary" pendingText="Checking out...">
                       Check out
-                    </button>
+                    </SubmitButton>
                   </form>
                 )}
               </td>

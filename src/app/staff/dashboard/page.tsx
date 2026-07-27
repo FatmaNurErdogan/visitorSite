@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { approveVisit, rejectVisit, checkInVisit, checkOutVisit } from "@/actions/visits";
 import { StatusBadge } from "@/components/StatusBadge";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export default async function StaffDashboardPage() {
   const session = await auth();
@@ -66,14 +67,14 @@ export default async function StaffDashboardPage() {
               </p>
               <p>Reason: {visit.visitReason}</p>
               <form action={approveVisit.bind(null, visit.id)} style={{ display: "inline" }}>
-                <button className="btn btn-success" type="submit">
+                <SubmitButton className="btn btn-success" pendingText="Approving...">
                   Approve
-                </button>
+                </SubmitButton>
               </form>{" "}
               <form action={rejectVisit.bind(null, visit.id)} style={{ display: "inline" }}>
-                <button className="btn btn-danger" type="submit">
+                <SubmitButton className="btn btn-danger" pendingText="Rejecting...">
                   Reject
-                </button>
+                </SubmitButton>
               </form>
             </div>
           ))}
@@ -92,16 +93,16 @@ export default async function StaffDashboardPage() {
               </p>
               {visit.status === "ACCEPTED" && (
                 <form action={checkInVisit.bind(null, visit.id)}>
-                  <button className="btn btn-primary" type="submit">
+                  <SubmitButton className="btn btn-primary" pendingText="Checking in...">
                     Check in
-                  </button>
+                  </SubmitButton>
                 </form>
               )}
               {visit.status === "CHECKED_IN" && (
                 <form action={checkOutVisit.bind(null, visit.id)}>
-                  <button className="btn btn-primary" type="submit">
+                  <SubmitButton className="btn btn-primary" pendingText="Checking out...">
                     Check out
-                  </button>
+                  </SubmitButton>
                 </form>
               )}
             </div>

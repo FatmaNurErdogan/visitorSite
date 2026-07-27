@@ -2,9 +2,19 @@
 
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendHostRequestNotification } from "@/lib/email/notifyHost";
+
+// Prisma'nın "update where" koşulu (id + belirli bir status) eşleşen satır
+// bulamazsa fırlattığı hata. Bu genelde iki kişi/iki sekme aynı ziyareti
+// aynı anda işlemeye çalıştığında olur — durum zaten değişmiş demektir.
+// Uygulamayı çökertmek yerine sessizce görmezden geliyoruz, sayfa zaten
+// revalidatePath ile yenilenip güncel durumu gösterecek.
+function isRecordNotFoundError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
+}
 
 export type VisitRequestState = {
   error?: string;
@@ -85,10 +95,15 @@ export async function approveVisit(visitId: string) {
   const visit = await prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
   await requireHostOrAdmin(visit.hostEmployeeId);
 
-  await prisma.visit.update({
-    where: { id: visitId, status: "PENDING" },
-    data: { status: "ACCEPTED", respondedAt: new Date() },
-  });
+  try {
+    await prisma.visit.update({
+      where: { id: visitId, status: "PENDING" },
+      data: { status: "ACCEPTED", respondedAt: new Date() },
+    });
+  } catch (error) {
+    if (!isRecordNotFoundError(error)) throw error;
+    // Başka biri (ya da çift tıklama) bu talebi zaten işlemiş, sorun değil.
+  }
 
   revalidatePath("/staff/dashboard");
   revalidatePath("/staff/visits");
@@ -98,10 +113,14 @@ export async function rejectVisit(visitId: string) {
   const visit = await prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
   await requireHostOrAdmin(visit.hostEmployeeId);
 
-  await prisma.visit.update({
-    where: { id: visitId, status: "PENDING" },
-    data: { status: "REJECTED", respondedAt: new Date() },
-  });
+  try {
+    await prisma.visit.update({
+      where: { id: visitId, status: "PENDING" },
+      data: { status: "REJECTED", respondedAt: new Date() },
+    });
+  } catch (error) {
+    if (!isRecordNotFoundError(error)) throw error;
+  }
 
   revalidatePath("/staff/dashboard");
   revalidatePath("/staff/visits");
@@ -110,10 +129,14 @@ export async function rejectVisit(visitId: string) {
 export async function checkInVisit(visitId: string) {
   await requireReceptionistOrAdmin();
 
-  await prisma.visit.update({
-    where: { id: visitId, status: "ACCEPTED" },
-    data: { status: "CHECKED_IN", checkedInAt: new Date() },
-  });
+  try {
+    await prisma.visit.update({
+      where: { id: visitId, status: "ACCEPTED" },
+      data: { status: "CHECKED_IN", checkedInAt: new Date() },
+    });
+  } catch (error) {
+    if (!isRecordNotFoundError(error)) throw error;
+  }
 
   revalidatePath("/staff/dashboard");
   revalidatePath("/staff/visits");
@@ -122,10 +145,14 @@ export async function checkInVisit(visitId: string) {
 export async function checkOutVisit(visitId: string) {
   await requireReceptionistOrAdmin();
 
-  await prisma.visit.update({
-    where: { id: visitId, status: "CHECKED_IN" },
-    data: { status: "CHECKED_OUT", checkedOutAt: new Date() },
-  });
+  try {
+    await prisma.visit.update({
+      where: { id: visitId, status: "CHECKED_IN" },
+      data: { status: "CHECKED_OUT", checkedOutAt: new Date() },
+    });
+  } catch (error) {
+    if (!isRecordNotFoundError(error)) throw error;
+  }
 
   revalidatePath("/staff/dashboard");
   revalidatePath("/staff/visits");
