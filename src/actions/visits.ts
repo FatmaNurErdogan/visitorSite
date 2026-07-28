@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendHostRequestNotification } from "@/lib/email/notifyHost";
+import { sendVisitorDecisionNotification } from "@/lib/email/notifyVisitor";
 
 // Prisma'nın "update where" koşulu (id + belirli bir status) eşleşen satır
 // bulamazsa fırlattığı hata. Bu genelde iki kişi/iki sekme aynı ziyareti
@@ -27,13 +28,13 @@ export async function createVisitRequest(
 ): Promise<VisitRequestState> {
   const name = formData.get("name") as string;
   const phone = formData.get("phone") as string;
-  const email = (formData.get("email") as string) || undefined;
+  const email = formData.get("email") as string;
   const company = (formData.get("company") as string) || undefined;
   const hostEmployeeId = formData.get("hostEmployeeId") as string;
   const visitReason = formData.get("visitReason") as string;
   const scheduledAtRaw = formData.get("scheduledAt") as string;
 
-  if (!name || !phone || !hostEmployeeId || !visitReason || !scheduledAtRaw) {
+  if (!name || !phone || !email || !hostEmployeeId || !visitReason || !scheduledAtRaw) {
     return { error: "Please fill in all required fields." };
   }
 
@@ -94,6 +95,20 @@ async function requireReceptionistOrAdmin() {
   }
 }
 
+async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "REJECTED") {
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    include: { visitor: true, hostEmployee: true },
+  });
+  if (!visit || !visit.visitor.email) return;
+
+  try {
+    await sendVisitorDecisionNotification(visit.visitor.email, visit.visitor.name, visit.hostEmployee.name, decision);
+  } catch (error) {
+    console.error(`Failed to send visitor decision notification for visit ${visitId}:`, error);
+  }
+}
+
 export async function approveVisit(visitId: string) {
   const visit = await prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
   await requireHostOrAdmin(visit.hostEmployeeId);
@@ -103,6 +118,7 @@ export async function approveVisit(visitId: string) {
       where: { id: visitId, status: "PENDING" },
       data: { status: "ACCEPTED", respondedAt: new Date() },
     });
+    await notifyVisitorOfDecision(visitId, "ACCEPTED");
   } catch (error) {
     if (!isRecordNotFoundError(error)) throw error;
     // Başka biri (ya da çift tıklama) bu talebi zaten işlemiş, sorun değil.
@@ -121,6 +137,7 @@ export async function rejectVisit(visitId: string) {
       where: { id: visitId, status: "PENDING" },
       data: { status: "REJECTED", respondedAt: new Date() },
     });
+    await notifyVisitorOfDecision(visitId, "REJECTED");
   } catch (error) {
     if (!isRecordNotFoundError(error)) throw error;
   }

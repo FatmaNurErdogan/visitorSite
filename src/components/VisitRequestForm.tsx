@@ -42,9 +42,9 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="email">
-          Email (optional)
+          Email
         </label>
-        <input className="form-input" id="email" name="email" type="email" />
+        <input className="form-input" id="email" name="email" type="email" required />
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="company">

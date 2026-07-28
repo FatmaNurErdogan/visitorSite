@@ -33,6 +33,10 @@ export async function createStaffAccount(
     return { error: "Please fill in all fields." };
   }
 
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
+
   if (!["ADMIN", "EMPLOYEE", "RECEPTIONIST"].includes(role)) {
     return { error: "Please pick a valid role." };
   }

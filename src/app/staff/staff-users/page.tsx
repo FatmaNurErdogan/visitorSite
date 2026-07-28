@@ -41,9 +41,9 @@ export default async function StaffUsersPage() {
         <tbody>
           {staff.map((member) => (
             <tr key={member.id}>
-              <td>{member.name}</td>
-              <td>{member.email}</td>
-              <td>{member.role}</td>
+              <td data-label="Name">{member.name}</td>
+              <td data-label="Email">{member.email}</td>
+              <td data-label="Role">{member.role}</td>
             </tr>
           ))}
         </tbody>
