@@ -41,6 +41,9 @@ export async function createVisitRequest(
   if (Number.isNaN(scheduledAt.getTime())) {
     return { error: "Please provide a valid date and time." };
   }
+  if (scheduledAt.getTime() < Date.now()) {
+    return { error: "Please pick a date and time in the future." };
+  }
 
   const host = await prisma.staff.findUnique({ where: { id: hostEmployeeId } });
   if (!host) {

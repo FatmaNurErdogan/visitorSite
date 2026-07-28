@@ -8,6 +8,13 @@ type HostOption = {
   name: string;
 };
 
+
+function nowForDateTimeInput() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16);
+}
+
 export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
   const [state, formAction, isPending] = useActionState(createVisitRequest, undefined);
 
@@ -70,7 +77,14 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
         <label className="form-label" htmlFor="scheduledAt">
           Date and time
         </label>
-        <input className="form-input" id="scheduledAt" name="scheduledAt" type="datetime-local" required />
+        <input
+          className="form-input"
+          id="scheduledAt"
+          name="scheduledAt"
+          type="datetime-local"
+          min={nowForDateTimeInput()}
+          required
+        />
       </div>
       {state?.error && <p className="form-error">{state.error}</p>}
       <button className="btn btn-primary" type="submit" disabled={isPending}>
