@@ -65,15 +65,15 @@ export default async function StaffVisitsPage({
         <tbody>
           {visits.map((visit) => (
             <tr key={visit.id}>
-              <td>{visit.visitor.name}</td>
-              <td>{visit.visitor.company || "-"}</td>
-              <td>{visit.hostEmployee.name}</td>
-              <td>{visit.visitReason}</td>
-              <td>{visit.scheduledAt.toLocaleString()}</td>
-              <td>
+              <td data-label="Visitor">{visit.visitor.name}</td>
+              <td data-label="Company">{visit.visitor.company || "-"}</td>
+              <td data-label="Host">{visit.hostEmployee.name}</td>
+              <td data-label="Reason">{visit.visitReason}</td>
+              <td data-label="Scheduled">{visit.scheduledAt.toLocaleString()}</td>
+              <td data-label="Status">
                 <StatusBadge status={visit.status} />
               </td>
-              <td>
+              <td data-label="Actions">
                 {visit.status === "PENDING" && canRespond(visit.hostEmployeeId) && (
                   <>
                     <form action={approveVisit.bind(null, visit.id)} style={{ display: "inline" }}>

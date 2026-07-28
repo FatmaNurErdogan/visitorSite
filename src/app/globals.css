@@ -167,3 +167,46 @@ a {
   background: #e0e0e0;
   color: #171717;
 }
+
+.badge-cancelled,
+.badge-expired {
+  background: #e0e0e0;
+  color: #575757;
+}
+
+/* Dar ekranda (telefon) .table'ı klasik tablo yerine kart listesine çeviriyoruz.
+   Başlık satırını gizleyip her hücrenin başına data-label'daki etiketi koyuyoruz,
+   böylece yatay kaydırmaya gerek kalmadan her şey (butonlar dahil) görünür kalıyor. */
+@media (max-width: 640px) {
+  .table thead {
+    display: none;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table tr {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .table td {
+    border-bottom: none;
+    padding: 6px 0;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    display: block;
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+}
