@@ -19,6 +19,7 @@ datasource db {
 // VisitStatus: "PENDING" (onay bekliyor) | "ACCEPTED" (onaylandı) | "REJECTED" (reddedildi)
 //   | "CHECKED_IN" (içeri girdi) | "CHECKED_OUT" (çıktı) | "CANCELLED" (iptal edildi) | "EXPIRED" (süresi doldu)
 
+
 model Staff {
   id           String   @id @default(cuid())
   name         String
@@ -28,6 +29,8 @@ model Staff {
   createdAt    DateTime @default(now())
 
   hostedVisits Visit[] @relation("HostEmployee")
+
+  @@map("vms_staff")
 }
 
 model Visitor {
@@ -39,6 +42,8 @@ model Visitor {
   createdAt DateTime @default(now())
 
   visits Visit[]
+
+  @@map("vms_visitor")
 }
 
 model Visit {
@@ -59,4 +64,6 @@ model Visit {
   respondedAt  DateTime? // çalışan ne zaman onayladı/reddetti
   checkedInAt  DateTime?
   checkedOutAt DateTime?
+
+  @@map("vms_visit")
 }
