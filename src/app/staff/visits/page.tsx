@@ -49,7 +49,8 @@ export default async function StaffVisitsPage({
             <th>Company</th>
             <th>Host</th>
             <th>Reason</th>
-            <th>Scheduled</th>
+            <th>Expected time</th>
+            <th>Actual arrival/exit time</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -60,7 +61,17 @@ export default async function StaffVisitsPage({
               <td data-label="Company">{visit.visitor.company || "-"}</td>
               <td data-label="Host">{visit.hostEmployee.name}</td>
               <td data-label="Reason">{visit.visitReason}</td>
-              <td data-label="Scheduled">{visit.scheduledAt.toLocaleString()}</td>
+              <td data-label="Expected time">{visit.scheduledAt.toLocaleString()}</td>
+              <td data-label="Actual arrival/exit time">
+                {visit.checkedInAt ? (
+                  <>
+                    {visit.checkedInAt.toLocaleTimeString()}
+                    {visit.checkedOutAt && ` – ${visit.checkedOutAt.toLocaleTimeString()}`}
+                  </>
+                ) : (
+                  "-"
+                )}
+              </td>
               <td data-label="Status">
                 <StatusBadge status={visit.status} />
               </td>
