@@ -1,9 +1,6 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { approveVisit, rejectVisit, checkInVisit, checkOutVisit } from "@/actions/visits";
 import { StatusBadge } from "@/components/StatusBadge";
-import { SubmitButton } from "@/components/SubmitButton";
 
 const STATUSES = ["PENDING", "ACCEPTED", "REJECTED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED", "EXPIRED"];
 
@@ -13,9 +10,6 @@ export default async function StaffVisitsPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
-  const session = await auth();
-  const role = session?.user?.role;
-  const userId = session?.user?.id;
 
   const visits = await prisma.visit.findMany({
     where: status ? { status } : undefined,
@@ -23,15 +17,13 @@ export default async function StaffVisitsPage({
     orderBy: { scheduledAt: "desc" },
   });
 
-  const canRespond = (hostEmployeeId: string) => role === "ADMIN" || userId === hostEmployeeId;
-  const canCheckInOut = role === "ADMIN" || role === "RECEPTIONIST";
-
   return (
     <main className="staff-visits-page page-container-wide">
       <h1>Visits</h1>
       <p>
         <Link href="/staff/dashboard">Dashboard</Link> &middot; <Link href="/staff/visits/new">Log a walk-in</Link>
       </p>
+      <p>Read-only log of every visit. Approve/reject requests and confirm arrivals/exits from the dashboard.</p>
 
       <form method="get">
         <label className="form-label" htmlFor="status">
@@ -59,7 +51,6 @@ export default async function StaffVisitsPage({
             <th>Reason</th>
             <th>Scheduled</th>
             <th>Status</th>
-            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -72,36 +63,6 @@ export default async function StaffVisitsPage({
               <td data-label="Scheduled">{visit.scheduledAt.toLocaleString()}</td>
               <td data-label="Status">
                 <StatusBadge status={visit.status} />
-              </td>
-              <td data-label="Actions">
-                {visit.status === "PENDING" && canRespond(visit.hostEmployeeId) && (
-                  <>
-                    <form action={approveVisit.bind(null, visit.id)} style={{ display: "inline" }}>
-                      <SubmitButton className="btn btn-success" pendingText="Approving...">
-                        Approve
-                      </SubmitButton>
-                    </form>{" "}
-                    <form action={rejectVisit.bind(null, visit.id)} style={{ display: "inline" }}>
-                      <SubmitButton className="btn btn-danger" pendingText="Rejecting...">
-                        Reject
-                      </SubmitButton>
-                    </form>
-                  </>
-                )}
-                {visit.status === "ACCEPTED" && canCheckInOut && (
-                  <form action={checkInVisit.bind(null, visit.id)}>
-                    <SubmitButton className="btn btn-primary" pendingText="Checking in...">
-                      Check in
-                    </SubmitButton>
-                  </form>
-                )}
-                {visit.status === "CHECKED_IN" && canCheckInOut && (
-                  <form action={checkOutVisit.bind(null, visit.id)}>
-                    <SubmitButton className="btn btn-primary" pendingText="Checking out...">
-                      Check out
-                    </SubmitButton>
-                  </form>
-                )}
               </td>
             </tr>
           ))}
