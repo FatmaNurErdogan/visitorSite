@@ -85,28 +85,49 @@ export default async function StaffDashboardPage() {
         <section>
           <h2>Today&apos;s visits</h2>
           {todaysVisits.length === 0 && <p>No visits to handle right now.</p>}
-          {todaysVisits.map((visit) => (
-            <div className="card" key={visit.id}>
-              <p>
-                <strong>{visit.visitor.name}</strong> visiting {visit.hostEmployee.name} &mdash;{" "}
-                <StatusBadge status={visit.status} />
-              </p>
-              {visit.status === "ACCEPTED" && (
-                <form action={checkInVisit.bind(null, visit.id)}>
-                  <SubmitButton className="btn btn-primary" pendingText="Checking in...">
-                    Check in
-                  </SubmitButton>
-                </form>
-              )}
-              {visit.status === "CHECKED_IN" && (
-                <form action={checkOutVisit.bind(null, visit.id)}>
-                  <SubmitButton className="btn btn-primary" pendingText="Checking out...">
-                    Check out
-                  </SubmitButton>
-                </form>
-              )}
-            </div>
-          ))}
+          {todaysVisits.length > 0 && (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Visitor</th>
+                  <th>Host</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {todaysVisits.map((visit) => (
+                  <tr key={visit.id}>
+                    <td data-label="Visitor">{visit.visitor.name}</td>
+                    <td data-label="Host">{visit.hostEmployee.name}</td>
+                    <td data-label="Date">{visit.scheduledAt.toLocaleDateString()}</td>
+                    <td data-label="Time">{visit.scheduledAt.toLocaleTimeString()}</td>
+                    <td data-label="Status">
+                      <StatusBadge status={visit.status} />
+                    </td>
+                    <td data-label="Action">
+                      {visit.status === "ACCEPTED" && (
+                        <form action={checkInVisit.bind(null, visit.id)}>
+                          <SubmitButton className="btn btn-primary" pendingText="Confirming...">
+                            Confirm arrival
+                          </SubmitButton>
+                        </form>
+                      )}
+                      {visit.status === "CHECKED_IN" && (
+                        <form action={checkOutVisit.bind(null, visit.id)}>
+                          <SubmitButton className="btn btn-primary" pendingText="Confirming...">
+                            Confirm exit
+                          </SubmitButton>
+                        </form>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </section>
       )}
     </main>

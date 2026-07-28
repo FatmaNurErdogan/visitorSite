@@ -19,3 +19,29 @@ export async function sendHostRequestNotification(
     `,
   });
 }
+
+// Sent to the host when reception confirms the visitor has physically
+// arrived and been let into the building.
+export async function sendVisitorArrivedNotification(hostEmail: string, visitorName: string) {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM_EMAIL as string,
+    to: hostEmail,
+    subject: `${visitorName} has arrived`,
+    html: `
+      <p>${visitorName} has checked in at reception and is on their way to you.</p>
+    `,
+  });
+}
+
+// Sent to the host when reception confirms the visitor has left the
+// building.
+export async function sendVisitorDepartedNotification(hostEmail: string, visitorName: string) {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM_EMAIL as string,
+    to: hostEmail,
+    subject: `${visitorName} has left`,
+    html: `
+      <p>${visitorName} has checked out at reception and left the building.</p>
+    `,
+  });
+}

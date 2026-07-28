@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { sendHostRequestNotification } from "@/lib/email/notifyHost";
+import {
+  sendHostRequestNotification,
+  sendVisitorArrivedNotification,
+  sendVisitorDepartedNotification,
+} from "@/lib/email/notifyHost";
 import { sendVisitorDecisionNotification } from "@/lib/email/notifyVisitor";
 
 // Prisma'nın "update where" koşulu (id + belirli bir status) eşleşen satır
@@ -150,10 +154,17 @@ export async function checkInVisit(visitId: string) {
   await requireReceptionistOrAdmin();
 
   try {
-    await prisma.visit.update({
+    const visit = await prisma.visit.update({
       where: { id: visitId, status: "ACCEPTED" },
       data: { status: "CHECKED_IN", checkedInAt: new Date() },
+      include: { visitor: true, hostEmployee: true },
     });
+
+    try {
+      await sendVisitorArrivedNotification(visit.hostEmployee.email, visit.visitor.name);
+    } catch (error) {
+      console.error(`Failed to send arrival notification for visit ${visitId}:`, error);
+    }
   } catch (error) {
     if (!isRecordNotFoundError(error)) throw error;
   }
@@ -166,10 +177,17 @@ export async function checkOutVisit(visitId: string) {
   await requireReceptionistOrAdmin();
 
   try {
-    await prisma.visit.update({
+    const visit = await prisma.visit.update({
       where: { id: visitId, status: "CHECKED_IN" },
       data: { status: "CHECKED_OUT", checkedOutAt: new Date() },
+      include: { visitor: true, hostEmployee: true },
     });
+
+    try {
+      await sendVisitorDepartedNotification(visit.hostEmployee.email, visit.visitor.name);
+    } catch (error) {
+      console.error(`Failed to send departure notification for visit ${visitId}:`, error);
+    }
   } catch (error) {
     if (!isRecordNotFoundError(error)) throw error;
   }
