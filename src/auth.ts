@@ -2,8 +2,7 @@
 // signIn, signOut, auth() fonksiyonlarını başka dosyalarda buradan import edip kullanacağız.
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { verifyStaffCredentials } from "@/lib/verifyStaffCredentials";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
@@ -23,30 +22,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Hangi kapıdan giriş yapılmaya çalışıldığı ("employee" veya "receptionist").
         // Home sayfasındaki linkler bunu /login?as=... ile taşıyor.
         const expectedRole = credentials?.expectedRole as string | undefined;
-        if (!email || !password) return null;
-
-        const staff = await prisma.staff.findUnique({ where: { email } });
-        if (!staff) return null;
-
-        const passwordMatches = await bcrypt.compare(password, staff.passwordHash);
-        if (!passwordMatches) return null;
-
-        // ADMIN her iki kapıdan da girebilir. EMPLOYEE sadece "employee" kapısından,
-        // RECEPTIONIST sadece "receptionist" kapısından girebilir.
-        if (
-          expectedRole &&
-          staff.role !== "ADMIN" &&
-          staff.role.toLowerCase() !== expectedRole.toLowerCase()
-        ) {
-          return null;
-        }
-
-        return {
-          id: staff.id,
-          name: staff.name,
-          email: staff.email,
-          role: staff.role,
-        };
+        return verifyStaffCredentials(email, password, expectedRole);
       },
     }),
   ],

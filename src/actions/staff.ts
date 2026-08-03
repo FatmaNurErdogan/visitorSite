@@ -11,6 +11,13 @@ export type CreateStaffState = {
   success?: boolean;
 };
 
+export type CreateStaffAccountInput = {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+};
+
 async function requireAdmin() {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") {
@@ -18,16 +25,14 @@ async function requireAdmin() {
   }
 }
 
-export async function createStaffAccount(
-  _prevState: CreateStaffState | undefined,
-  formData: FormData
-): Promise<CreateStaffState> {
-  await requireAdmin();
-
-  const name = formData.get("name") as string;
-  const email = (formData.get("email") as string)?.trim().toLowerCase();
-  const password = formData.get("password") as string;
-  const role = formData.get("role") as string;
+// Doğrulama + hesap oluşturma mantığı. Hem web form action'ı hem mobil
+// API route'u (src/app/api/mobile/staff) bunu çağırır; yetki kontrolü
+// çağıranın işi.
+export async function createStaffAccountCore(input: CreateStaffAccountInput): Promise<CreateStaffState> {
+  const name = input.name;
+  const email = input.email?.trim().toLowerCase();
+  const password = input.password;
+  const role = input.role;
 
   if (!name || !email || !password || !role) {
     return { error: "Please fill in all fields." };
@@ -51,7 +56,25 @@ export async function createStaffAccount(
     data: { name, email, passwordHash, role },
   });
 
-  revalidatePath("/staff/staff-users");
-
   return { success: true };
+}
+
+export async function createStaffAccount(
+  _prevState: CreateStaffState | undefined,
+  formData: FormData
+): Promise<CreateStaffState> {
+  await requireAdmin();
+
+  const result = await createStaffAccountCore({
+    name: formData.get("name") as string,
+    email: formData.get("email") as string,
+    password: formData.get("password") as string,
+    role: formData.get("role") as string,
+  });
+
+  if (result.success) {
+    revalidatePath("/staff/staff-users");
+  }
+
+  return result;
 }

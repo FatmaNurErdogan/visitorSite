@@ -2,9 +2,10 @@
 
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
-import { Prisma } from "@prisma/client";
+import { type Visit } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isRecordNotFoundError } from "@/lib/prismaErrors";
 import {
   sendHostRequestNotification,
   sendVisitorArrivedNotification,
@@ -12,31 +13,31 @@ import {
 } from "@/lib/email/notifyHost";
 import { sendVisitorDecisionNotification } from "@/lib/email/notifyVisitor";
 
-// Prisma'nın "update where" koşulu (id + belirli bir status) eşleşen satır
-// bulamazsa fırlattığı hata. Bu genelde iki kişi/iki sekme aynı ziyareti
-// aynı anda işlemeye çalıştığında olur — durum zaten değişmiş demektir.
-// Uygulamayı çökertmek yerine sessizce görmezden geliyoruz, sayfa zaten
-// revalidatePath ile yenilenip güncel durumu gösterecek.
-function isRecordNotFoundError(error: unknown) {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
-}
-
 export type VisitRequestState = {
   error?: string;
   success?: boolean;
 };
 
-export async function createVisitRequest(
-  _prevState: VisitRequestState | undefined,
-  formData: FormData
-): Promise<VisitRequestState> {
-  const name = formData.get("name") as string;
-  const phone = formData.get("phone") as string;
-  const email = formData.get("email") as string;
-  const company = (formData.get("company") as string) || undefined;
-  const hostEmployeeId = formData.get("hostEmployeeId") as string;
-  const visitReason = formData.get("visitReason") as string;
-  const scheduledAtRaw = formData.get("scheduledAt") as string;
+export type CreateVisitRequestInput = {
+  name: string;
+  phone: string;
+  email: string;
+  company?: string;
+  hostEmployeeId: string;
+  visitReason: string;
+  scheduledAt: string;
+};
+
+export type CreateVisitRequestResult =
+  | { error: string; success?: undefined; visit?: undefined }
+  | { success: true; error?: undefined; visit: Visit };
+
+// Ziyaret talebini oluşturan asıl mantık: doğrulama + visitor/visit kaydı +
+// host'a email bildirimi. Hem web form action'ı hem mobil API route'u
+// (src/app/api/mobile/visits) bunu çağırır.
+export async function createVisitRequestCore(input: CreateVisitRequestInput): Promise<CreateVisitRequestResult> {
+  const { name, phone, email, company, hostEmployeeId, visitReason } = input;
+  const scheduledAtRaw = input.scheduledAt;
 
   if (!name || !phone || !email || !hostEmployeeId || !visitReason || !scheduledAtRaw) {
     return { error: "Please fill in all required fields." };
@@ -76,10 +77,30 @@ export async function createVisitRequest(
     console.error(`Failed to send host notification for visit ${visit.id}:`, error);
   }
 
-  revalidatePath("/staff/dashboard");
-  revalidatePath("/staff/visits");
+  return { success: true, visit };
+}
 
-  return { success: true };
+export async function createVisitRequest(
+  _prevState: VisitRequestState | undefined,
+  formData: FormData
+): Promise<VisitRequestState> {
+  const result = await createVisitRequestCore({
+    name: formData.get("name") as string,
+    phone: formData.get("phone") as string,
+    email: formData.get("email") as string,
+    company: (formData.get("company") as string) || undefined,
+    hostEmployeeId: formData.get("hostEmployeeId") as string,
+    visitReason: formData.get("visitReason") as string,
+    scheduledAt: formData.get("scheduledAt") as string,
+  });
+
+  if (result.success) {
+    revalidatePath("/staff/dashboard");
+    revalidatePath("/staff/visits");
+    return { success: true };
+  }
+
+  return { error: result.error };
 }
 
 async function requireHostOrAdmin(hostEmployeeId: string) {
@@ -113,16 +134,60 @@ async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "
   }
 }
 
+// --- Core mutasyonlar: sadece DB güncellemesi + email bildirimi.
+// Yetki kontrolü (requireHostOrAdmin / requireReceptionistOrAdmin) ve
+// revalidatePath çağıranın (Server Action ya da mobil API route) işi.
+
+export async function approveVisitCore(visitId: string) {
+  await prisma.visit.update({
+    where: { id: visitId, status: "PENDING" },
+    data: { status: "ACCEPTED", respondedAt: new Date() },
+  });
+  await notifyVisitorOfDecision(visitId, "ACCEPTED");
+}
+
+export async function rejectVisitCore(visitId: string) {
+  await prisma.visit.update({
+    where: { id: visitId, status: "PENDING" },
+    data: { status: "REJECTED", respondedAt: new Date() },
+  });
+  await notifyVisitorOfDecision(visitId, "REJECTED");
+}
+
+export async function checkInVisitCore(visitId: string) {
+  const visit = await prisma.visit.update({
+    where: { id: visitId, status: "ACCEPTED" },
+    data: { status: "CHECKED_IN", checkedInAt: new Date() },
+    include: { visitor: true, hostEmployee: true },
+  });
+
+  try {
+    await sendVisitorArrivedNotification(visit.hostEmployee.email, visit.visitor.name);
+  } catch (error) {
+    console.error(`Failed to send arrival notification for visit ${visitId}:`, error);
+  }
+}
+
+export async function checkOutVisitCore(visitId: string) {
+  const visit = await prisma.visit.update({
+    where: { id: visitId, status: "CHECKED_IN" },
+    data: { status: "CHECKED_OUT", checkedOutAt: new Date() },
+    include: { visitor: true, hostEmployee: true },
+  });
+
+  try {
+    await sendVisitorDepartedNotification(visit.hostEmployee.email, visit.visitor.name);
+  } catch (error) {
+    console.error(`Failed to send departure notification for visit ${visitId}:`, error);
+  }
+}
+
 export async function approveVisit(visitId: string) {
   const visit = await prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
   await requireHostOrAdmin(visit.hostEmployeeId);
 
   try {
-    await prisma.visit.update({
-      where: { id: visitId, status: "PENDING" },
-      data: { status: "ACCEPTED", respondedAt: new Date() },
-    });
-    await notifyVisitorOfDecision(visitId, "ACCEPTED");
+    await approveVisitCore(visitId);
   } catch (error) {
     if (!isRecordNotFoundError(error)) throw error;
     // Başka biri (ya da çift tıklama) bu talebi zaten işlemiş, sorun değil.
@@ -137,11 +202,7 @@ export async function rejectVisit(visitId: string) {
   await requireHostOrAdmin(visit.hostEmployeeId);
 
   try {
-    await prisma.visit.update({
-      where: { id: visitId, status: "PENDING" },
-      data: { status: "REJECTED", respondedAt: new Date() },
-    });
-    await notifyVisitorOfDecision(visitId, "REJECTED");
+    await rejectVisitCore(visitId);
   } catch (error) {
     if (!isRecordNotFoundError(error)) throw error;
   }
@@ -154,17 +215,7 @@ export async function checkInVisit(visitId: string) {
   await requireReceptionistOrAdmin();
 
   try {
-    const visit = await prisma.visit.update({
-      where: { id: visitId, status: "ACCEPTED" },
-      data: { status: "CHECKED_IN", checkedInAt: new Date() },
-      include: { visitor: true, hostEmployee: true },
-    });
-
-    try {
-      await sendVisitorArrivedNotification(visit.hostEmployee.email, visit.visitor.name);
-    } catch (error) {
-      console.error(`Failed to send arrival notification for visit ${visitId}:`, error);
-    }
+    await checkInVisitCore(visitId);
   } catch (error) {
     if (!isRecordNotFoundError(error)) throw error;
   }
@@ -177,17 +228,7 @@ export async function checkOutVisit(visitId: string) {
   await requireReceptionistOrAdmin();
 
   try {
-    const visit = await prisma.visit.update({
-      where: { id: visitId, status: "CHECKED_IN" },
-      data: { status: "CHECKED_OUT", checkedOutAt: new Date() },
-      include: { visitor: true, hostEmployee: true },
-    });
-
-    try {
-      await sendVisitorDepartedNotification(visit.hostEmployee.email, visit.visitor.name);
-    } catch (error) {
-      console.error(`Failed to send departure notification for visit ${visitId}:`, error);
-    }
+    await checkOutVisitCore(visitId);
   } catch (error) {
     if (!isRecordNotFoundError(error)) throw error;
   }
