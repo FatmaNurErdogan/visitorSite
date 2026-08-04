@@ -1,6 +1,6 @@
 # Visitor Management System
 
-Uzser için ziyaretçi yönetim sistemi. Ziyaretçi giriş yapmadan bir ziyaret talebi oluşturur,
+Ziyaretçi yönetim sistemi. Ziyaretçi giriş yapmadan bir ziyaret talebi oluşturur,
 ziyaret edeceği çalışana mail gider, çalışan giriş yapıp onaylar/reddeder, resepsiyonist de
 onaylanan ziyaretçiyi fiziksel olarak içeri alır/çıkarır.
 

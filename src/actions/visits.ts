@@ -50,6 +50,11 @@ export async function createVisitRequestCore(input: CreateVisitRequestInput): Pr
   if (scheduledAt.getTime() < Date.now()) {
     return { error: "Please pick a date and time in the future." };
   }
+  // Randevular sadece mesai saatleri içinde alınabilir.
+  const hour = scheduledAt.getHours();
+  if (hour < 9 || hour >= 18) {
+    return { error: "Please pick a time between 9:00 and 18:00." };
+  }
 
   const host = await prisma.staff.findUnique({ where: { id: hostEmployeeId } });
   if (!host) {
