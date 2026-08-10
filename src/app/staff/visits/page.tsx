@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { isChatOpen } from "@/actions/messages";
 import { StatusBadge } from "@/components/StatusBadge";
 
 const STATUSES = ["PENDING", "ACCEPTED", "REJECTED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED", "EXPIRED"];
@@ -10,12 +12,19 @@ export default async function StaffVisitsPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
+  const session = await auth();
+  const role = session?.user?.role;
+  const userId = session?.user?.id;
 
   const visits = await prisma.visit.findMany({
     where: status ? { status } : undefined,
     include: { visitor: true, hostEmployee: true },
     orderBy: { scheduledAt: "desc" },
   });
+
+  // Just hides the link for rows this viewer can't open — the real
+  // enforcement is server-side in /staff/visits/[id]/chat and its API route.
+  const canChat = (hostEmployeeId: string) => role === "ADMIN" || userId === hostEmployeeId;
 
   return (
     <main className="staff-visits-page page-container-wide">
@@ -52,6 +61,7 @@ export default async function StaffVisitsPage({
             <th>Expected time</th>
             <th>Actual arrival/exit time</th>
             <th>Status</th>
+            <th>Chat</th>
           </tr>
         </thead>
         <tbody>
@@ -74,6 +84,13 @@ export default async function StaffVisitsPage({
               </td>
               <td data-label="Status">
                 <StatusBadge status={visit.status} />
+              </td>
+              <td data-label="Chat">
+                {isChatOpen(visit.status) && canChat(visit.hostEmployeeId) ? (
+                  <Link href={`/staff/visits/${visit.id}/chat`}>Open chat</Link>
+                ) : (
+                  "-"
+                )}
               </td>
             </tr>
           ))}

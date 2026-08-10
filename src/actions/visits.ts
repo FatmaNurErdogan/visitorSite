@@ -128,7 +128,13 @@ async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "
   if (!visit || !visit.visitor.email) return;
 
   try {
-    await sendVisitorDecisionNotification(visit.visitor.email, visit.visitor.name, visit.hostEmployee.name, decision);
+    await sendVisitorDecisionNotification(
+      visit.visitor.email,
+      visit.visitor.name,
+      visit.hostEmployee.name,
+      decision,
+      visit.accessToken
+    );
   } catch (error) {
     console.error(`Failed to send visitor decision notification for visit ${visitId}:`, error);
   }

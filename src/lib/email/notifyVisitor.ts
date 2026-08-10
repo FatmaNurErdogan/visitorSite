@@ -6,9 +6,11 @@ export async function sendVisitorDecisionNotification(
   visitorEmail: string,
   visitorName: string,
   hostName: string,
-  decision: "ACCEPTED" | "REJECTED"
+  decision: "ACCEPTED" | "REJECTED",
+  accessToken: string
 ) {
   const isApproved = decision === "ACCEPTED";
+  const visitUrl = `${process.env.APP_BASE_URL}/visit/${accessToken}`;
 
   await getResend().emails.send({
     from: process.env.RESEND_FROM_EMAIL as string,
@@ -18,7 +20,7 @@ export async function sendVisitorDecisionNotification(
       ? `
         <p>Hi ${visitorName},</p>
         <p>Your request to visit ${hostName} has been <strong>approved</strong>.</p>
-        <p>See you soon!</p>
+        <p>See you soon! You can also <a href="${visitUrl}">message ${hostName} directly</a> before you arrive.</p>
       `
       : `
         <p>Hi ${visitorName},</p>

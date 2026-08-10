@@ -28,7 +28,8 @@ model Staff {
   role         String   @default("EMPLOYEE")
   createdAt    DateTime @default(now())
 
-  hostedVisits Visit[] @relation("HostEmployee")
+  hostedVisits Visit[]    @relation("HostEmployee")
+  sentMessages Message[]  @relation("StaffMessages")
 
   @@map("vms_staff")
 }
@@ -65,5 +66,27 @@ model Visit {
   checkedInAt  DateTime?
   checkedOutAt DateTime?
 
+  messages Message[]
+
   @@map("vms_visit")
+}
+
+// Ziyaretçi ile host arasındaki sohbet. Ziyaretçi accessToken linki
+// üzerinden (giriş yapmadan), personel /staff/visits/[id]/chat üzerinden
+// (host ya da ADMIN) mesajlaşıyor. Sadece ACCEPTED/CHECKED_IN/CHECKED_OUT
+// durumlarında açık — bkz. src/actions/messages.ts isChatOpen.
+model Message {
+  id      String @id @default(cuid())
+  visit   Visit  @relation(fields: [visitId], references: [id])
+  visitId String
+
+  // SenderType: "VISITOR" | "STAFF"
+  senderType    String
+  senderStaff   Staff?  @relation("StaffMessages", fields: [senderStaffId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  senderStaffId String?
+
+  body      String   @db.NVarChar(2000)
+  createdAt DateTime @default(now())
+
+  @@map("vms_message")
 }
