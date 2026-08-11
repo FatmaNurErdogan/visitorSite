@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 // Auth gerektirmez — visitor/page.tsx'teki sorguyla aynı.
 export async function GET() {
   const hosts = await prisma.staff.findMany({
-    select: { id: true, name: true },
+    select: { id: true, name: true, department: true },
     orderBy: { name: "asc" },
   });
 
