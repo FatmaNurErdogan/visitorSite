@@ -53,7 +53,7 @@ export default async function StaffVisitChatPage({ params }: { params: Promise<{
       {isChatOpen(visit.status) ? (
         <ChatBox apiUrl={`/api/staff/visits/${id}/messages`} viewerType="STAFF" />
       ) : (
-        <p>Chat opens once the visit is accepted, and stays open through check-out.</p>
+        <p>Chat isn&apos;t available for this visit.</p>
       )}
     </main>
   );

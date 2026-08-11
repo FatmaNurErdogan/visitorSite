@@ -1,5 +1,5 @@
-// /visit/[token] — the link a visitor gets once their request is approved.
-// No login: the accessToken generated at request time is the credential.
+// /visit/[token] — the visitor's page for a single visit. No login: the
+// accessToken generated at request time is the credential.
 import { getVisitByAccessToken, isChatOpen } from "@/actions/messages";
 import { ChatBox } from "@/components/ChatBox";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -33,11 +33,7 @@ export default async function VisitorVisitPage({ params }: { params: Promise<{ t
           <ChatBox apiUrl={`/api/visits/${token}/messages`} viewerType="VISITOR" />
         </section>
       ) : (
-        <p>
-          {visit.status === "PENDING"
-            ? "Chat will open once your visit is approved."
-            : "Chat isn't available for this visit."}
-        </p>
+        <p>Chat isn&apos;t available for this visit.</p>
       )}
     </main>
   );

@@ -2,7 +2,7 @@
 // looking at it. Visitor goes to the public request form; Employee and
 // Receptionist go to the same login page but with a different `as` query
 // param, so an employee account can't log in through the receptionist
-// door and vice versa (enforced in src/auth.ts).
+// door and vice versa (enforced in src/lib/verifyStaffCredentials.ts).
 import Link from "next/link";
 
 export default function Home() {

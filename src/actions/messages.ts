@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
 
-// Chat is open once a host has accepted the visit, and stays open through
-// check-in/check-out — there's no one to talk to before that, and the
-// conversation can still matter for a bit after the visitor leaves.
-const OPEN_STATUSES = ["ACCEPTED", "CHECKED_IN", "CHECKED_OUT"];
+// Chat is open as soon as the visitor submits the request — no need to wait
+// on the host — and stays open through check-in/check-out. Only closed once
+// the visit is a dead end (REJECTED/CANCELLED/EXPIRED).
+const OPEN_STATUSES = ["PENDING", "ACCEPTED", "CHECKED_IN", "CHECKED_OUT"];
 
 export function isChatOpen(status: string) {
   return OPEN_STATUSES.includes(status);

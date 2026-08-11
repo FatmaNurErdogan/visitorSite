@@ -30,7 +30,8 @@ export default async function StaffVisitsPage({
     <main className="staff-visits-page page-container-wide">
       <h1>Visits</h1>
       <p>
-        <Link href="/staff/dashboard">Dashboard</Link> &middot; <Link href="/staff/visits/new">Log a walk-in</Link>
+        <Link href="/staff/dashboard">Dashboard</Link> &middot; <Link href="/staff/visits/new">Log a walk-in</Link>{" "}
+        &middot; <Link href="/staff/rooms">Meeting rooms</Link>
       </p>
       <p>Read-only log of every visit. Approve/reject requests and confirm arrivals/exits from the dashboard.</p>
 
