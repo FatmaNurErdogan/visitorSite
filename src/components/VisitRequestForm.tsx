@@ -47,12 +47,6 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
         <input className="form-input" id="email" name="email" type="email" required />
       </div>
       <div className="form-group">
-        <label className="form-label" htmlFor="company">
-          Company (optional)
-        </label>
-        <input className="form-input" id="company" name="company" type="text" />
-      </div>
-      <div className="form-group">
         <label className="form-label" htmlFor="hostEmployeeId">
           Who are you visiting?
         </label>
@@ -75,7 +69,7 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="scheduledAt">
-          Date and time
+          Date and time (9:00–18:00 only)
         </label>
         <input
           className="form-input"
