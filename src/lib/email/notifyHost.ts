@@ -45,3 +45,31 @@ export async function sendVisitorDepartedNotification(hostEmail: string, visitor
     `,
   });
 }
+
+// Departman admin'i son kararını verince (personel zaten onaylamıştı) host'a
+// giden bilgi maili — kabul edildiyse veya reddedildiyse (gerekçesiyle).
+export async function sendHostFinalDecisionNotification(
+  hostEmail: string,
+  hostName: string,
+  visitorName: string,
+  decision: "ACCEPTED" | "REJECTED",
+  reason?: string
+) {
+  const isApproved = decision === "ACCEPTED";
+
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM_EMAIL as string,
+    to: hostEmail,
+    subject: isApproved ? `${visitorName}'s visit was approved` : `${visitorName}'s visit was rejected`,
+    html: isApproved
+      ? `
+        <p>Hi ${hostName},</p>
+        <p>The visit request from ${visitorName} that you approved has now been <strong>finally approved</strong> by the department admin. The visitor has been notified.</p>
+      `
+      : `
+        <p>Hi ${hostName},</p>
+        <p>The visit request from ${visitorName} that you approved was <strong>rejected</strong> by the department admin.</p>
+        ${reason ? `<p>Reason: ${reason}</p>` : ""}
+      `,
+  });
+}

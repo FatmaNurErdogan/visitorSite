@@ -16,8 +16,10 @@ datasource db {
 // alanlarını metin (String) olarak tutuyoruz. Geçerli değerler şunlar:
 
 // StaffRole: "ADMIN" | "EMPLOYEE" | "RECEPTIONIST"
-// VisitStatus: "PENDING" (onay bekliyor) | "ACCEPTED" (onaylandı) | "REJECTED" (reddedildi)
-//   | "CHECKED_IN" (içeri girdi) | "CHECKED_OUT" (çıktı) | "CANCELLED" (iptal edildi) | "EXPIRED" (süresi doldu)
+// VisitStatus: "PENDING" (personel onayı bekliyor) | "PENDING_ADMIN_APPROVAL" (personel onayladı,
+//   departman admin'inin onayı bekleniyor) | "ACCEPTED" (onaylandı, ziyaretçiye mail gitti)
+//   | "REJECTED" (reddedildi) | "CHECKED_IN" (içeri girdi) | "CHECKED_OUT" (çıktı)
+//   | "CANCELLED" (iptal edildi) | "EXPIRED" (süresi doldu)
 // RoomBookingStatus: "PENDING" (admin onayı bekliyor) | "APPROVED" (onaylandı) | "REJECTED" (reddedildi)
 
 model Staff {
@@ -69,6 +71,9 @@ model Visit {
   respondedAt  DateTime? // çalışan ne zaman onayladı/reddetti
   checkedInAt  DateTime?
   checkedOutAt DateTime?
+
+  // Departman admin'i son aşamada reddederse yazdığı gerekçe — çalışana gösterilir/mail'lenir.
+  adminRejectionReason String? @db.NVarChar(1000)
 
   messages     Message[]
   roomBookings RoomBooking[]

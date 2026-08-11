@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { rejectVisit, checkInVisit, checkOutVisit } from "@/actions/visits";
+import {
+  approveVisit,
+  rejectVisit,
+  approveVisitByAdmin,
+  rejectVisitByAdmin,
+  checkInVisit,
+  checkOutVisit,
+} from "@/actions/visits";
 import { approveRoomBooking, rejectRoomBooking } from "@/actions/rooms";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -12,7 +19,8 @@ export default async function StaffDashboardPage() {
   const userId = session?.user?.id;
 
   const showApprovals = role === "EMPLOYEE" || role === "ADMIN";
-  const showTodaysVisits = role === "RECEPTIONIST" || role === "ADMIN";
+  const showAdminApprovals = role === "ADMIN";
+  const showTodaysVisits = role === "RECEPTIONIST";
   const showRoomRequests = role === "ADMIN";
 
   const pendingApprovals = showApprovals
@@ -20,6 +28,21 @@ export default async function StaffDashboardPage() {
         where: {
           status: "PENDING",
           ...(role === "ADMIN" ? {} : { hostEmployeeId: userId }),
+        },
+        include: { visitor: true, hostEmployee: true },
+        orderBy: { requestedAt: "asc" },
+      })
+    : [];
+
+  // Departman admin'i olarak son onayını bekleyen talepler: eğer admin'in
+  // kendi departmanı varsa sadece o departmandaki host'ların talepleri,
+  // departmanı olmayan (genel) admin ise hepsini görür.
+  const currentAdmin = showAdminApprovals ? await prisma.staff.findUnique({ where: { id: userId } }) : null;
+  const pendingAdminApprovals = showAdminApprovals
+    ? await prisma.visit.findMany({
+        where: {
+          status: "PENDING_ADMIN_APPROVAL",
+          ...(currentAdmin?.department ? { hostEmployee: { department: currentAdmin.department } } : {}),
         },
         include: { visitor: true, hostEmployee: true },
         orderBy: { requestedAt: "asc" },
@@ -81,10 +104,46 @@ export default async function StaffDashboardPage() {
                 {visit.hostEmployee.name} on {visit.scheduledAt.toLocaleString()}
               </p>
               <p>Reason: {visit.visitReason}</p>
-              <Link className="btn btn-success" href={`/staff/visits/${visit.id}/approve`}>
-                Approve
-              </Link>{" "}
+              <form action={approveVisit.bind(null, visit.id)} style={{ display: "inline" }}>
+                <SubmitButton className="btn btn-success" pendingText="Approving...">
+                  Approve
+                </SubmitButton>
+              </form>{" "}
               <form action={rejectVisit.bind(null, visit.id)} style={{ display: "inline" }}>
+                <SubmitButton className="btn btn-danger" pendingText="Rejecting...">
+                  Reject
+                </SubmitButton>
+              </form>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {showAdminApprovals && (
+        <section>
+          <h2>Pending your final approval{currentAdmin?.department ? ` (${currentAdmin.department})` : ""}</h2>
+          <p>These were already approved by the host employee and are waiting on you before the visitor is notified.</p>
+          {pendingAdminApprovals.length === 0 && <p>Nothing waiting on you.</p>}
+          {pendingAdminApprovals.map((visit) => (
+            <div className="card" key={visit.id}>
+              <p>
+                <strong>{visit.visitor.name}</strong> ({visit.visitor.company || "no company"}) wants to visit{" "}
+                {visit.hostEmployee.name} on {visit.scheduledAt.toLocaleString()}
+              </p>
+              <p>Reason: {visit.visitReason}</p>
+              <form action={approveVisitByAdmin.bind(null, visit.id)} style={{ display: "inline" }}>
+                <SubmitButton className="btn btn-success" pendingText="Approving...">
+                  Approve
+                </SubmitButton>
+              </form>
+              <form action={rejectVisitByAdmin.bind(null, visit.id)} className="admin-reject-form">
+                <textarea
+                  className="form-input"
+                  name="reason"
+                  placeholder="Why are you rejecting this? (required)"
+                  rows={2}
+                  required
+                />
                 <SubmitButton className="btn btn-danger" pendingText="Rejecting...">
                   Reject
                 </SubmitButton>

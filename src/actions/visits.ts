@@ -8,9 +8,11 @@ import { prisma } from "@/lib/prisma";
 import { isRecordNotFoundError } from "@/lib/prismaErrors";
 import {
   sendHostRequestNotification,
+  sendHostFinalDecisionNotification,
   sendVisitorArrivedNotification,
   sendVisitorDepartedNotification,
 } from "@/lib/email/notifyHost";
+import { sendAdminPendingApprovalNotification } from "@/lib/email/notifyAdmin";
 import { sendVisitorDecisionNotification } from "@/lib/email/notifyVisitor";
 
 export type VisitRequestState = {
@@ -117,12 +119,51 @@ async function requireHostOrAdmin(hostEmployeeId: string) {
   }
 }
 
-async function requireReceptionistOrAdmin() {
+// Sadece resepsiyon giriş/çıkış onayı verebilir — admin dahil kimse bu adımı
+// onun yerine yapamaz (fiziksel kontrol resepsiyonun işi).
+async function requireReceptionist() {
+  const session = await auth();
+  if (session?.user?.role !== "RECEPTIONIST") {
+    throw new Error("Only reception can check visitors in or out.");
+  }
+}
+
+// İkinci onay aşaması: host çalışanın departmanına atanmış ADMIN, ya da
+// departmanı olmayan (genel) bir ADMIN bu onayı verebilir.
+async function requireDepartmentAdminOrSuperAdmin(hostEmployeeId: string) {
   const session = await auth();
   const role = session?.user?.role;
-  if (!session || (role !== "ADMIN" && role !== "RECEPTIONIST")) {
-    throw new Error("Not authorized to check visitors in or out.");
+  const userId = session?.user?.id;
+  if (!session || role !== "ADMIN" || !userId) {
+    throw new Error("Not authorized to give final approval for this visit request.");
   }
+
+  const admin = await prisma.staff.findUnique({ where: { id: userId } });
+  if (!admin) {
+    throw new Error("Not authorized to give final approval for this visit request.");
+  }
+  if (admin.department === null) {
+    return; // genel admin, departmanı olmadığı için her isteği onaylayabilir
+  }
+
+  const host = await prisma.staff.findUnique({ where: { id: hostEmployeeId } });
+  if (!host || host.department !== admin.department) {
+    throw new Error("Not authorized to give final approval for this department's visit requests.");
+  }
+}
+
+// Host'un departmanına bakan admin(ler); departmanın kendi admin'i yoksa
+// (ya da host'un departmanı yoksa) departmanı olmayan genel admin(ler)e düşer.
+async function getAdminsToNotify(hostEmployeeId: string) {
+  const host = await prisma.staff.findUnique({ where: { id: hostEmployeeId } });
+  if (!host) return [];
+
+  if (host.department) {
+    const deptAdmins = await prisma.staff.findMany({ where: { role: "ADMIN", department: host.department } });
+    if (deptAdmins.length > 0) return deptAdmins;
+  }
+
+  return prisma.staff.findMany({ where: { role: "ADMIN", department: null } });
 }
 
 async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "REJECTED") {
@@ -145,16 +186,59 @@ async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "
   }
 }
 
-// --- Core mutasyonlar: sadece DB güncellemesi + email bildirimi.
-// Yetki kontrolü (requireHostOrAdmin / requireReceptionistOrAdmin) ve
-// revalidatePath çağıranın (Server Action ya da mobil API route) işi.
+// Personel onayladıktan sonra, o departmanın admin'ine (ya da genel admin'e)
+// "senin onayın bekleniyor" maili gider.
+async function notifyAdminsOfPendingApproval(visitId: string) {
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    include: { visitor: true, hostEmployee: true },
+  });
+  if (!visit) return;
 
+  const admins = await getAdminsToNotify(visit.hostEmployeeId);
+  for (const admin of admins) {
+    try {
+      await sendAdminPendingApprovalNotification(
+        admin.email,
+        visit.visitor.name,
+        visit.hostEmployee.name,
+        visit.scheduledAt,
+        visit.visitReason
+      );
+    } catch (error) {
+      console.error(`Failed to send admin pending-approval notification for visit ${visitId}:`, error);
+    }
+  }
+}
+
+// Admin son kararını verince host çalışana "onaylandı/reddedildi" maili gider.
+async function notifyHostOfFinalDecision(visitId: string, decision: "ACCEPTED" | "REJECTED", reason?: string) {
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    include: { visitor: true, hostEmployee: true },
+  });
+  if (!visit) return;
+
+  try {
+    await sendHostFinalDecisionNotification(visit.hostEmployee.email, visit.hostEmployee.name, visit.visitor.name, decision, reason);
+  } catch (error) {
+    console.error(`Failed to send host final-decision notification for visit ${visitId}:`, error);
+  }
+}
+
+// --- Core mutasyonlar: sadece DB güncellemesi + email bildirimi.
+// Yetki kontrolü (requireHostOrAdmin / requireReceptionist / requireDepartmentAdminOrSuperAdmin)
+// ve revalidatePath çağıranın (Server Action ya da mobil API route) işi.
+
+// Personel onayı: talebi reddetmiyor ama son karar değil — departman admin'inin
+// de onaylaması gerekiyor. Ziyaretçiye mail bu noktada gitmiyor (bkz. approveVisitByAdminCore),
+// bunun yerine ilgili admin'e "onayın bekleniyor" maili gidiyor.
 export async function approveVisitCore(visitId: string) {
   await prisma.visit.update({
     where: { id: visitId, status: "PENDING" },
-    data: { status: "ACCEPTED", respondedAt: new Date() },
+    data: { status: "PENDING_ADMIN_APPROVAL", respondedAt: new Date() },
   });
-  await notifyVisitorOfDecision(visitId, "ACCEPTED");
+  await notifyAdminsOfPendingApproval(visitId);
 }
 
 export async function rejectVisitCore(visitId: string) {
@@ -163,6 +247,28 @@ export async function rejectVisitCore(visitId: string) {
     data: { status: "REJECTED", respondedAt: new Date() },
   });
   await notifyVisitorOfDecision(visitId, "REJECTED");
+}
+
+// İkinci ve son onay: departman admin'i onaylayınca ziyaretçiye "onaylandı"
+// maili, host çalışana da "onaylandı" bilgi maili gider.
+export async function approveVisitByAdminCore(visitId: string) {
+  await prisma.visit.update({
+    where: { id: visitId, status: "PENDING_ADMIN_APPROVAL" },
+    data: { status: "ACCEPTED" },
+  });
+  await notifyVisitorOfDecision(visitId, "ACCEPTED");
+  await notifyHostOfFinalDecision(visitId, "ACCEPTED");
+}
+
+// Admin son aşamada reddederse bir gerekçe yazmak zorunda — bu gerekçe hem
+// kayıtta tutulur hem host çalışana mail ile gider.
+export async function rejectVisitByAdminCore(visitId: string, reason: string) {
+  await prisma.visit.update({
+    where: { id: visitId, status: "PENDING_ADMIN_APPROVAL" },
+    data: { status: "REJECTED", adminRejectionReason: reason },
+  });
+  await notifyVisitorOfDecision(visitId, "REJECTED");
+  await notifyHostOfFinalDecision(visitId, "REJECTED", reason);
 }
 
 export async function checkInVisitCore(visitId: string) {
@@ -222,8 +328,41 @@ export async function rejectVisit(visitId: string) {
   revalidatePath("/staff/visits");
 }
 
+export async function approveVisitByAdmin(visitId: string) {
+  const visit = await prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
+  await requireDepartmentAdminOrSuperAdmin(visit.hostEmployeeId);
+
+  try {
+    await approveVisitByAdminCore(visitId);
+  } catch (error) {
+    if (!isRecordNotFoundError(error)) throw error;
+  }
+
+  revalidatePath("/staff/dashboard");
+  revalidatePath("/staff/visits");
+}
+
+export async function rejectVisitByAdmin(visitId: string, formData: FormData) {
+  const visit = await prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
+  await requireDepartmentAdminOrSuperAdmin(visit.hostEmployeeId);
+
+  const reason = (formData.get("reason") as string)?.trim();
+  if (!reason) {
+    throw new Error("Please explain why you're rejecting this request.");
+  }
+
+  try {
+    await rejectVisitByAdminCore(visitId, reason);
+  } catch (error) {
+    if (!isRecordNotFoundError(error)) throw error;
+  }
+
+  revalidatePath("/staff/dashboard");
+  revalidatePath("/staff/visits");
+}
+
 export async function checkInVisit(visitId: string) {
-  await requireReceptionistOrAdmin();
+  await requireReceptionist();
 
   try {
     await checkInVisitCore(visitId);
@@ -236,7 +375,7 @@ export async function checkInVisit(visitId: string) {
 }
 
 export async function checkOutVisit(visitId: string) {
-  await requireReceptionistOrAdmin();
+  await requireReceptionist();
 
   try {
     await checkOutVisitCore(visitId);

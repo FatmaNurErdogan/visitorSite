@@ -1,5 +1,6 @@
 const LABELS: Record<string, string> = {
   PENDING: "Pending",
+  PENDING_ADMIN_APPROVAL: "Awaiting admin approval",
   ACCEPTED: "Accepted",
   REJECTED: "Rejected",
   CHECKED_IN: "Checked in",

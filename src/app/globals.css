@@ -148,6 +148,19 @@ a {
   color: #7a5b00;
 }
 
+.badge-pending_admin_approval {
+  background: #ffe5b4;
+  color: #8a4b00;
+}
+
+.admin-reject-form {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  vertical-align: top;
+  width: 240px;
+}
+
 .badge-accepted {
   background: #d4edda;
   color: #1a7f37;

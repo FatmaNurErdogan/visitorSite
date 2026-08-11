@@ -4,7 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { isChatOpen } from "@/actions/messages";
 import { StatusBadge } from "@/components/StatusBadge";
 
-const STATUSES = ["PENDING", "ACCEPTED", "REJECTED", "CHECKED_IN", "CHECKED_OUT", "CANCELLED", "EXPIRED"];
+const STATUSES = [
+  "PENDING",
+  "PENDING_ADMIN_APPROVAL",
+  "ACCEPTED",
+  "REJECTED",
+  "CHECKED_IN",
+  "CHECKED_OUT",
+  "CANCELLED",
+  "EXPIRED",
+];
 
 export default async function StaffVisitsPage({
   searchParams,
@@ -62,6 +71,7 @@ export default async function StaffVisitsPage({
             <th>Expected time</th>
             <th>Actual arrival/exit time</th>
             <th>Status</th>
+            <th>Rejection reason</th>
             <th>Chat</th>
           </tr>
         </thead>
@@ -86,6 +96,7 @@ export default async function StaffVisitsPage({
               <td data-label="Status">
                 <StatusBadge status={visit.status} />
               </td>
+              <td data-label="Rejection reason">{visit.adminRejectionReason || "-"}</td>
               <td data-label="Chat">
                 {isChatOpen(visit.status) && canChat(visit.hostEmployeeId) ? (
                   <Link href={`/staff/visits/${visit.id}/chat`}>Open chat</Link>

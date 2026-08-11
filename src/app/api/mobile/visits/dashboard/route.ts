@@ -12,13 +12,26 @@ export async function GET(req: Request) {
 
   const { role, sub: userId } = user;
   const showApprovals = role === "EMPLOYEE" || role === "ADMIN";
-  const showTodaysVisits = role === "RECEPTIONIST" || role === "ADMIN";
+  const showAdminApprovals = role === "ADMIN";
+  const showTodaysVisits = role === "RECEPTIONIST";
 
   const pendingApprovals = showApprovals
     ? await prisma.visit.findMany({
         where: {
           status: "PENDING",
           ...(role === "ADMIN" ? {} : { hostEmployeeId: userId }),
+        },
+        include: { visitor: true, hostEmployee: { select: { id: true, name: true, email: true } } },
+        orderBy: { requestedAt: "asc" },
+      })
+    : [];
+
+  const currentAdmin = showAdminApprovals ? await prisma.staff.findUnique({ where: { id: userId } }) : null;
+  const pendingAdminApprovals = showAdminApprovals
+    ? await prisma.visit.findMany({
+        where: {
+          status: "PENDING_ADMIN_APPROVAL",
+          ...(currentAdmin?.department ? { hostEmployee: { department: currentAdmin.department } } : {}),
         },
         include: { visitor: true, hostEmployee: { select: { id: true, name: true, email: true } } },
         orderBy: { requestedAt: "asc" },
@@ -43,5 +56,5 @@ export async function GET(req: Request) {
       })
     : [];
 
-  return NextResponse.json({ pendingApprovals, todaysVisits });
+  return NextResponse.json({ pendingApprovals, pendingAdminApprovals, todaysVisits });
 }

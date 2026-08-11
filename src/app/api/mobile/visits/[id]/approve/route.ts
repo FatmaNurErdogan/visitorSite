@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getMobileUser } from "@/lib/mobileAuth";
-import { submitVisitApprovalCore } from "@/actions/rooms";
+import { getMobileUser, type MobileTokenPayload } from "@/lib/mobileAuth";
+import { approveVisitCore, approveVisitByAdminCore } from "@/actions/visits";
+import { isRecordNotFoundError } from "@/lib/prismaErrors";
 
-// Not: yaklaşan bir Flutter güncellemesi gerektiriyor — mobil client artık
-// body'de roomId/endTime göndermeli (web'deki oda talebi akışıyla aynı
-// kural). Göndermezse submitVisitApprovalCore "Please select a meeting
-// room." hatasıyla 400 döner.
+// Departman admin'inin son onayını verebilir mi kontrolü — web tarafındaki
+// requireDepartmentAdminOrSuperAdmin'in mobil (JWT) karşılığı.
+async function canGiveFinalApproval(user: MobileTokenPayload, hostEmployeeId: string) {
+  if (user.role !== "ADMIN") return false;
+  const admin = await prisma.staff.findUnique({ where: { id: user.sub } });
+  if (!admin) return false;
+  if (admin.department === null) return true;
+  const host = await prisma.staff.findUnique({ where: { id: hostEmployeeId } });
+  return host?.department === admin.department;
+}
+
+// İki aşamalı onay: PENDING -> personel (ya da herhangi bir admin) onaylar,
+// PENDING_ADMIN_APPROVAL -> sadece o departmanın (ya da genel) admin'i onaylar
+// ve ancak o zaman ziyaretçiye mail gider.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getMobileUser(req);
   if (!user) {
@@ -19,18 +30,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Visit not found." }, { status: 404 });
   }
 
-  if (user.role !== "ADMIN" && user.sub !== visit.hostEmployeeId) {
-    return NextResponse.json({ error: "Not authorized to respond to this visit request." }, { status: 403 });
-  }
-
-  const body = await req.json().catch(() => null);
-  const roomId = body?.roomId as string | undefined;
-  const endTime = body?.endTime as string | undefined;
-
-  const result = await submitVisitApprovalCore(id, user.role, user.sub, roomId ?? "", endTime ?? "");
-  if (result.error) {
-    const status = result.error === "This visit request has already been processed." ? 409 : 400;
-    return NextResponse.json({ error: result.error }, { status });
+  try {
+    if (visit.status === "PENDING") {
+      if (user.role !== "ADMIN" && user.sub !== visit.hostEmployeeId) {
+        return NextResponse.json({ error: "Not authorized to respond to this visit request." }, { status: 403 });
+      }
+      await approveVisitCore(id);
+    } else if (visit.status === "PENDING_ADMIN_APPROVAL") {
+      if (!(await canGiveFinalApproval(user, visit.hostEmployeeId))) {
+        return NextResponse.json(
+          { error: "Not authorized to give final approval for this visit request." },
+          { status: 403 }
+        );
+      }
+      await approveVisitByAdminCore(id);
+    } else {
+      return NextResponse.json({ error: "This visit request has already been processed." }, { status: 409 });
+    }
+  } catch (error) {
+    if (isRecordNotFoundError(error)) {
+      return NextResponse.json({ error: "This visit request has already been processed." }, { status: 409 });
+    }
+    throw error;
   }
 
   return NextResponse.json({ success: true });
