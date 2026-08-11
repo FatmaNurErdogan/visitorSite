@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     orderBy: { name: "asc" },
     include: {
       bookings: {
-        where: { status: "APPROVED" },
+        where: { status: "APPROVED", endTime: { gte: new Date() } },
         orderBy: { startTime: "asc" },
         include: {
           requestedBy: { select: { id: true, name: true } },

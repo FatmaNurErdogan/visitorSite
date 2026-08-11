@@ -22,7 +22,14 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
   if (state?.success) {
     return (
       <div className="card">
-        <p>Thanks! Your visit request has been submitted and is waiting for approval.</p>
+        {state.scheduleConflict ? (
+          <p>
+            Sorry, your host already has another visit scheduled around that time. We&apos;ve emailed you — please
+            submit a new request for a different time.
+          </p>
+        ) : (
+          <p>Thanks! Your visit request has been submitted and is waiting for approval.</p>
+        )}
       </div>
     );
   }

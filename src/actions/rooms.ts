@@ -96,10 +96,87 @@ export async function createMeetingRoom(
   return result;
 }
 
-// Not: oda rezervasyonu artık ziyaret onayından tamamen bağımsız — bir ziyareti
-// onaylamak oda seçmeyi gerektirmiyor (bkz. src/actions/visits.ts). Bu
-// fonksiyonlar, ileride bağımsız bir "oda rezervasyonu yap" akışı eklenirse
-// diye duruyor; şu an onları PENDING'e çeken bir oluşturma akışı yok.
+// Not: oda rezervasyonu ziyaret onayından tamamen bağımsız — bir ziyareti
+// onaylamak oda seçmeyi gerektirmiyor (bkz. src/actions/visits.ts). Herhangi
+// bir personel /staff/rooms üzerinden bağımsız bir toplantı odası rezervasyonu
+// talep edebilir; oda o saatte doluysa (başka bir APPROVED rezervasyon varsa)
+// talep oluşturulamaz, kişi farklı bir saat seçmek zorunda kalır. Oda boşsa
+// talep PENDING olarak oluşur ve admin onayını bekler.
+
+export type CreateRoomBookingInput = {
+  roomId: string;
+  purpose: string;
+  startTime: string;
+  endTime: string;
+  requestedById: string;
+};
+
+export async function createRoomBookingCore(input: CreateRoomBookingInput): Promise<RoomFormState> {
+  const room = await prisma.meetingRoom.findUnique({ where: { id: input.roomId } });
+  if (!room) {
+    return { error: "Room not found." };
+  }
+
+  const purpose = input.purpose?.trim();
+  if (!purpose) {
+    return { error: "Please describe the purpose of the meeting." };
+  }
+
+  const startTime = new Date(input.startTime);
+  const endTime = new Date(input.endTime);
+  if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
+    return { error: "Please provide a valid date and time." };
+  }
+  if (startTime.getTime() < Date.now()) {
+    return { error: "Please pick a time in the future." };
+  }
+  if (endTime.getTime() <= startTime.getTime()) {
+    return { error: "End time must be after the start time." };
+  }
+
+  if (await roomHasConflict(input.roomId, startTime, endTime)) {
+    return { error: "This room is already booked for that time — please pick a different time." };
+  }
+
+  await prisma.roomBooking.create({
+    data: {
+      roomId: input.roomId,
+      requestedById: input.requestedById,
+      purpose,
+      startTime,
+      endTime,
+    },
+  });
+
+  return { success: true };
+}
+
+export async function createRoomBooking(
+  roomId: string,
+  _prevState: RoomFormState | undefined,
+  formData: FormData
+): Promise<RoomFormState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    throw new Error("Not authorized to request a room booking.");
+  }
+
+  const result = await createRoomBookingCore({
+    roomId,
+    purpose: formData.get("purpose") as string,
+    startTime: formData.get("startTime") as string,
+    endTime: formData.get("endTime") as string,
+    requestedById: userId,
+  });
+
+  if (result.success) {
+    revalidatePath("/staff/rooms");
+    revalidatePath("/staff/dashboard");
+  }
+
+  return result;
+}
 
 // Sadece ADMIN bekleyen oda taleplerini onaylayıp reddedebilir.
 export async function approveRoomBooking(bookingId: string) {

@@ -12,7 +12,7 @@ export default async function MeetingRoomsPage() {
     orderBy: { name: "asc" },
     include: {
       bookings: {
-        where: { status: "APPROVED" },
+        where: { status: "APPROVED", endTime: { gte: new Date() } },
         orderBy: { startTime: "asc" },
         include: {
           requestedBy: true,
@@ -46,6 +46,7 @@ export default async function MeetingRoomsPage() {
             <th>Perks</th>
             <th>Status</th>
             <th>Used by</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -78,11 +79,38 @@ export default async function MeetingRoomsPage() {
                       ? `Next: ${next.startTime.toLocaleString()} — ${usedByLabel(next)}`
                       : "-"}
                 </td>
+                <td data-label="Action">
+                  <Link className="btn btn-primary" href={`/staff/rooms/${room.id}/book`}>
+                    Reserve
+                  </Link>
+                </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      <h2>Schedule</h2>
+      <p>Every upcoming booking, by room — who&apos;s using it and when.</p>
+      {rooms.every((room) => room.bookings.length === 0) && <p>No upcoming bookings.</p>}
+      {rooms.map(
+        (room) =>
+          room.bookings.length > 0 && (
+            <div className="card" key={room.id}>
+              <p>
+                <strong>{room.name}</strong>
+              </p>
+              {room.bookings.map((booking) => (
+                <p key={booking.id}>
+                  {booking.startTime.toLocaleString()} – {booking.endTime.toLocaleTimeString()} &mdash;{" "}
+                  {booking.visit
+                    ? `${booking.visit.visitor.name} (visiting ${booking.visit.hostEmployee.name})`
+                    : `${booking.requestedBy.name} (internal meeting)`}
+                </p>
+              ))}
+            </div>
+          )
+      )}
     </main>
   );
 }

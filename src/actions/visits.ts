@@ -13,11 +13,14 @@ import {
   sendVisitorDepartedNotification,
 } from "@/lib/email/notifyHost";
 import { sendAdminPendingApprovalNotification } from "@/lib/email/notifyAdmin";
-import { sendVisitorDecisionNotification } from "@/lib/email/notifyVisitor";
+import { sendVisitorDecisionNotification, sendVisitorScheduleConflictNotification } from "@/lib/email/notifyVisitor";
 
 export type VisitRequestState = {
   error?: string;
   success?: boolean;
+  // Talep oluşturuldu ama host'un o saatte başka kabul edilmiş bir ziyareti
+  // olduğu için otomatik reddedildi — form buna göre farklı bir mesaj gösterir.
+  scheduleConflict?: boolean;
 };
 
 export type CreateVisitRequestInput = {
@@ -32,7 +35,24 @@ export type CreateVisitRequestInput = {
 
 export type CreateVisitRequestResult =
   | { error: string; success?: undefined; visit?: undefined }
-  | { success: true; error?: undefined; visit: Visit };
+  | { success: true; error?: undefined; visit: Visit; scheduleConflict?: boolean };
+
+// Randevular için sabit bir süre varsayıyoruz (Visit'in bir bitiş saati yok) —
+// aynı host için bu süre içinde çakışan başka bir kabul edilmiş ziyaret var mı bakar.
+const VISIT_DURATION_MS = 60 * 60 * 1000;
+
+async function hostHasScheduleConflict(hostEmployeeId: string, scheduledAt: Date) {
+  const windowStart = new Date(scheduledAt.getTime() - VISIT_DURATION_MS + 1);
+  const windowEnd = new Date(scheduledAt.getTime() + VISIT_DURATION_MS - 1);
+  const conflict = await prisma.visit.findFirst({
+    where: {
+      hostEmployeeId,
+      status: { in: ["ACCEPTED", "CHECKED_IN"] },
+      scheduledAt: { gt: windowStart, lt: windowEnd },
+    },
+  });
+  return Boolean(conflict);
+}
 
 // Ziyaret talebini oluşturan asıl mantık: doğrulama + visitor/visit kaydı +
 // host'a email bildirimi. Hem web form action'ı hem mobil API route'u
@@ -67,6 +87,11 @@ export async function createVisitRequestCore(input: CreateVisitRequestInput): Pr
     data: { name, phone, email, company },
   });
 
+  // Host'un o saatte zaten kabul edilmiş (ACCEPTED/CHECKED_IN) başka bir
+  // ziyareti varsa talep otomatik reddedilir — host'a hiç gitmez, ziyaretçiye
+  // farklı bir saat denemesini söyleyen bir mail gider.
+  const hasScheduleConflict = await hostHasScheduleConflict(hostEmployeeId, scheduledAt);
+
   const visit = await prisma.visit.create({
     data: {
       visitorId: visitor.id,
@@ -75,8 +100,24 @@ export async function createVisitRequestCore(input: CreateVisitRequestInput): Pr
       scheduledAt,
       accessToken: randomUUID(),
       tokenExpiresAt: new Date(scheduledAt.getTime() + 24 * 60 * 60 * 1000),
+      ...(hasScheduleConflict
+        ? {
+            status: "REJECTED",
+            respondedAt: new Date(),
+            adminRejectionReason: `${host.name} already has another visit scheduled around this time.`,
+          }
+        : {}),
     },
   });
+
+  if (hasScheduleConflict) {
+    try {
+      await sendVisitorScheduleConflictNotification(visitor.email ?? email, visitor.name, host.name, scheduledAt);
+    } catch (error) {
+      console.error(`Failed to send schedule-conflict notification for visit ${visit.id}:`, error);
+    }
+    return { success: true, visit, scheduleConflict: true };
+  }
 
   try {
     await sendHostRequestNotification(host.email, visitor.name, visitReason, scheduledAt);
@@ -104,7 +145,7 @@ export async function createVisitRequest(
   if (result.success) {
     revalidatePath("/staff/dashboard");
     revalidatePath("/staff/visits");
-    return { success: true };
+    return { success: true, scheduleConflict: result.scheduleConflict };
   }
 
   return { error: result.error };
@@ -166,7 +207,7 @@ async function getAdminsToNotify(hostEmployeeId: string) {
   return prisma.staff.findMany({ where: { role: "ADMIN", department: null } });
 }
 
-async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "REJECTED") {
+async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "REJECTED", reason?: string) {
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
     include: { visitor: true, hostEmployee: true },
@@ -179,7 +220,8 @@ async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "
       visit.visitor.name,
       visit.hostEmployee.name,
       decision,
-      visit.accessToken
+      visit.accessToken,
+      reason
     );
   } catch (error) {
     console.error(`Failed to send visitor decision notification for visit ${visitId}:`, error);
@@ -267,7 +309,7 @@ export async function rejectVisitByAdminCore(visitId: string, reason: string) {
     where: { id: visitId, status: "PENDING_ADMIN_APPROVAL" },
     data: { status: "REJECTED", adminRejectionReason: reason },
   });
-  await notifyVisitorOfDecision(visitId, "REJECTED");
+  await notifyVisitorOfDecision(visitId, "REJECTED", reason);
   await notifyHostOfFinalDecision(visitId, "REJECTED", reason);
 }
 

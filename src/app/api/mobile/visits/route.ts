@@ -39,9 +39,9 @@ export async function POST(req: Request) {
     scheduledAt: body.scheduledAt,
   });
 
-  if (result.error) {
+  if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  return NextResponse.json({ visit: result.visit }, { status: 201 });
+  return NextResponse.json({ visit: result.visit, scheduleConflict: result.scheduleConflict ?? false }, { status: 201 });
 }

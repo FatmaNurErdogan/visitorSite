@@ -7,7 +7,8 @@ export async function sendVisitorDecisionNotification(
   visitorName: string,
   hostName: string,
   decision: "ACCEPTED" | "REJECTED",
-  accessToken: string
+  accessToken: string,
+  reason?: string
 ) {
   const isApproved = decision === "ACCEPTED";
   const visitUrl = `${process.env.APP_BASE_URL}/visit/${accessToken}`;
@@ -25,6 +26,30 @@ export async function sendVisitorDecisionNotification(
       : `
         <p>Hi ${visitorName},</p>
         <p>Your request to visit ${hostName} has been <strong>declined</strong>.</p>
+        ${reason ? `<p>Reason: ${reason}</p>` : ""}
+        <p>Feel free to submit a new request for a different time.</p>
       `,
+  });
+}
+
+// Host'un o saatte zaten kabul edilmiş başka bir ziyareti olduğu için talebin
+// otomatik reddedildiği durumda gönderilir — sendVisitorDecisionNotification'ın
+// genel red mailinden farklı olarak ziyaretçiyi açıkça farklı bir saat
+// denemeye yönlendirir.
+export async function sendVisitorScheduleConflictNotification(
+  visitorEmail: string,
+  visitorName: string,
+  hostName: string,
+  scheduledAt: Date
+) {
+  await getResend().emails.send({
+    from: process.env.RESEND_FROM_EMAIL as string,
+    to: visitorEmail,
+    subject: "Your visit request couldn't be scheduled",
+    html: `
+      <p>Hi ${visitorName},</p>
+      <p>${hostName} already has another visit scheduled around ${scheduledAt.toLocaleString()}, so we couldn't accept your request for that time.</p>
+      <p>Please submit a new request for a different time.</p>
+    `,
   });
 }
