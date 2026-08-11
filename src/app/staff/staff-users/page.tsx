@@ -36,6 +36,7 @@ export default async function StaffUsersPage() {
             <th>Name</th>
             <th>Email</th>
             <th>Role</th>
+            <th>Department</th>
           </tr>
         </thead>
         <tbody>
@@ -44,6 +45,7 @@ export default async function StaffUsersPage() {
               <td data-label="Name">{member.name}</td>
               <td data-label="Email">{member.email}</td>
               <td data-label="Role">{member.role}</td>
+              <td data-label="Department">{member.department || "—"}</td>
             </tr>
           ))}
         </tbody>

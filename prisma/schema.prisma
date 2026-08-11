@@ -19,13 +19,13 @@ datasource db {
 // VisitStatus: "PENDING" (onay bekliyor) | "ACCEPTED" (onaylandı) | "REJECTED" (reddedildi)
 //   | "CHECKED_IN" (içeri girdi) | "CHECKED_OUT" (çıktı) | "CANCELLED" (iptal edildi) | "EXPIRED" (süresi doldu)
 
-
 model Staff {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
   passwordHash String
   role         String   @default("EMPLOYEE")
+  department   String?
   createdAt    DateTime @default(now())
 
   hostedVisits Visit[] @relation("HostEmployee")
@@ -47,10 +47,10 @@ model Visitor {
 }
 
 model Visit {
-  id             String   @id @default(cuid())
-  visitor        Visitor  @relation(fields: [visitorId], references: [id])
+  id             String  @id @default(cuid())
+  visitor        Visitor @relation(fields: [visitorId], references: [id])
   visitorId      String
-  hostEmployee   Staff    @relation("HostEmployee", fields: [hostEmployeeId], references: [id])
+  hostEmployee   Staff   @relation("HostEmployee", fields: [hostEmployeeId], references: [id])
   hostEmployeeId String
 
   visitReason String

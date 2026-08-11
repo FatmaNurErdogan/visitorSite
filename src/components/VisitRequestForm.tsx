@@ -6,6 +6,7 @@ import { createVisitRequest } from "@/actions/visits";
 type HostOption = {
   id: string;
   name: string;
+  department?: string | null;
 };
 
 
@@ -57,6 +58,7 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
           {hosts.map((host) => (
             <option key={host.id} value={host.id}>
               {host.name}
+              {host.department ? ` (${host.department})` : ""}
             </option>
           ))}
         </select>
