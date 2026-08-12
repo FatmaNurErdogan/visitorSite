@@ -19,6 +19,7 @@ datasource db {
 // VisitStatus: "PENDING" (onay bekliyor) | "ACCEPTED" (onaylandı) | "REJECTED" (reddedildi)
 //   | "CHECKED_IN" (içeri girdi) | "CHECKED_OUT" (çıktı) | "CANCELLED" (iptal edildi) | "EXPIRED" (süresi doldu)
 // RoomBookingStatus: "PENDING" (admin onayı bekliyor) | "APPROVED" (onaylandı) | "REJECTED" (reddedildi)
+//   | "CANCELLED" (doğrudan rezervasyon süresi dolmadan admin tarafından iptal edildi)
 
 model Staff {
   id           String   @id @default(cuid())

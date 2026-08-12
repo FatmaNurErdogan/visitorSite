@@ -14,11 +14,13 @@ export async function GET(req: Request) {
   const showApprovals = role === "EMPLOYEE" || role === "ADMIN";
   const showTodaysVisits = role === "RECEPTIONIST" || role === "ADMIN";
 
+  // Herkes (ADMIN dahil) burada sadece kendi host olduğu ziyaretleri görür —
+  // bkz. web dashboard'daki aynı yorum (src/app/staff/dashboard/page.tsx).
   const pendingApprovals = showApprovals
     ? await prisma.visit.findMany({
         where: {
           status: "PENDING",
-          ...(role === "ADMIN" ? {} : { hostEmployeeId: userId }),
+          hostEmployeeId: userId,
         },
         include: { visitor: true, hostEmployee: { select: { id: true, name: true, email: true } } },
         orderBy: { requestedAt: "asc" },

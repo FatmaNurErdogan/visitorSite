@@ -15,11 +15,15 @@ export default async function StaffDashboardPage() {
   const showTodaysVisits = role === "RECEPTIONIST" || role === "ADMIN";
   const showRoomRequests = role === "ADMIN";
 
+  // Herkes (ADMIN dahil) burada sadece kendi host olduğu ziyaretleri görür
+  // — ADMIN başkasının ziyaretini onaylayabilme yetkisini hâlâ koruyor
+  // (requireHostOrAdmin), sadece dashboard'da öne çıkarılmıyor; çalışan
+  // henüz bakmamışken admin'in görüp erkenden devreye girmesini önlemek için.
   const pendingApprovals = showApprovals
     ? await prisma.visit.findMany({
         where: {
           status: "PENDING",
-          ...(role === "ADMIN" ? {} : { hostEmployeeId: userId }),
+          hostEmployeeId: userId,
         },
         include: { visitor: true, hostEmployee: true },
         orderBy: { requestedAt: "asc" },

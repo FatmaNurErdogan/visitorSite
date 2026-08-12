@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { cancelDirectRoomBooking } from "@/actions/rooms";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -46,12 +48,18 @@ export default async function MeetingRoomsPage() {
             <th>Perks</th>
             <th>Status</th>
             <th>Used by</th>
+            {isAdmin && <th>Actions</th>}
           </tr>
         </thead>
         <tbody>
           {rooms.map((room) => {
             const current = room.bookings.find((b) => b.startTime <= now && b.endTime > now);
             const next = room.bookings.find((b) => b.startTime > now);
+            // Sadece ziyaretsiz (doğrudan) rezervasyonlar iptal edilebilir —
+            // bkz. cancelDirectRoomBookingCore. Gösterilen (current ya da
+            // next) hangisiyse onu teklif ediyoruz.
+            const shown = current ?? next;
+            const cancellable = shown && !shown.visit ? shown : undefined;
 
             const usedByLabel = (booking: (typeof room.bookings)[number]) =>
               booking.visit
@@ -78,6 +86,21 @@ export default async function MeetingRoomsPage() {
                       ? `Next: ${next.startTime.toLocaleString()} — ${usedByLabel(next)}`
                       : "-"}
                 </td>
+                {isAdmin && (
+                  <td data-label="Actions">
+                    <Link href={`/staff/rooms/${room.id}/book`}>Book</Link>
+                    {cancellable && (
+                      <>
+                        {" "}
+                        <form action={cancelDirectRoomBooking.bind(null, cancellable.id)} style={{ display: "inline" }}>
+                          <SubmitButton className="btn btn-danger" pendingText="Cancelling...">
+                            Cancel
+                          </SubmitButton>
+                        </form>
+                      </>
+                    )}
+                  </td>
+                )}
               </tr>
             );
           })}
