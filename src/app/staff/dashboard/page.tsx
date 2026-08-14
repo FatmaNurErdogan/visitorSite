@@ -12,7 +12,9 @@ export default async function StaffDashboardPage() {
   const userId = session?.user?.id;
 
   const showApprovals = role === "EMPLOYEE" || role === "ADMIN";
-  const showTodaysVisits = role === "RECEPTIONIST" || role === "ADMIN";
+  // Giriş/çıkış onayı sadece RECEPTIONIST'in işi — ADMIN dahil burada değil
+  // (bkz. src/actions/visits.ts requireReceptionist).
+  const showTodaysVisits = role === "RECEPTIONIST";
   const showRoomRequests = role === "ADMIN";
 
   // Herkes (ADMIN dahil) burada sadece kendi host olduğu ziyaretleri görür

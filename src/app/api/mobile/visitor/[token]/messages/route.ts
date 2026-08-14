@@ -1,14 +1,25 @@
 import { NextResponse } from "next/server";
-import { getVisitByAccessToken, isChatOpen, listMessagesCore, sendVisitorMessageCore } from "@/actions/messages";
+import {
+  getVisitByAccessToken,
+  isChatOpenForVisitor,
+  listMessagesCore,
+  sendVisitorMessageCore,
+  validateMessageBody,
+} from "@/actions/messages";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 // Mobil (Flutter) uygulaması için ziyaretçi tarafı sohbet API'si.
 // /api/visits/[token]/messages (web) ile aynı mantık, sadece mobil
 // istemcinin sabit /api/mobile taban URL'ine uysun diye ayrı bir path'te.
 // Kimlik doğrulama yok — link zaten kimlik yerine geçiyor.
-export async function GET(_req: Request, { params }: { params: Promise<{ token: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
+  if (!checkRateLimit(`mobile-visitor-messages-get:${clientIp(req)}`, 60, 60_000)) {
+    return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
+  }
+
   const { token } = await params;
   const visit = await getVisitByAccessToken(token);
-  if (!visit || !isChatOpen(visit.status)) {
+  if (!visit || !isChatOpenForVisitor(visit)) {
     return NextResponse.json({ error: "Chat isn't available for this visit." }, { status: 404 });
   }
 
@@ -18,15 +29,20 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
 
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+  if (!checkRateLimit(`mobile-visitor-messages-post:${token}`, 20, 60_000)) {
+    return NextResponse.json({ error: "Too many messages. Please slow down." }, { status: 429 });
+  }
+
   const visit = await getVisitByAccessToken(token);
-  if (!visit || !isChatOpen(visit.status)) {
+  if (!visit || !isChatOpenForVisitor(visit)) {
     return NextResponse.json({ error: "Chat isn't available for this visit." }, { status: 404 });
   }
 
   const body = await req.json().catch(() => null);
   const text = typeof body?.body === "string" ? body.body.trim() : "";
-  if (!text) {
-    return NextResponse.json({ error: "Message can't be empty." }, { status: 400 });
+  const validationError = validateMessageBody(text);
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   const message = await sendVisitorMessageCore(visit.id, text);

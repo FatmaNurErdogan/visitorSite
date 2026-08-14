@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,8 +15,21 @@ async function requireAdmin() {
   return session;
 }
 
-async function roomHasConflict(roomId: string, startTime: Date, endTime: Date, excludeBookingId?: string) {
-  const conflict = await prisma.roomBooking.findFirst({
+// Not: tx her zaman bir Prisma.TransactionClient olmalı (bkz. çağıranlar) —
+// SERIALIZABLE izolasyon seviyesi altında bu SELECT'in aldığı range lock,
+// aynı oda/aralık için eşzamanlı bir başka booking'in bu transaction bitene
+// kadar beklemesini sağlıyor; commit'ten sonra tekrar okunduğunda çakışma
+// artık görünür oluyor. Düz prisma client ile (transaction dışı) çağrılırsa
+// bu garanti kalkar — iki eşzamanlı istek ikisi de conflict=false görüp aynı
+// odayı çift rezerve edebilir.
+async function roomHasConflict(
+  tx: Prisma.TransactionClient,
+  roomId: string,
+  startTime: Date,
+  endTime: Date,
+  excludeBookingId?: string
+) {
+  const conflict = await tx.roomBooking.findFirst({
     where: {
       roomId,
       status: "APPROVED",
@@ -129,23 +143,32 @@ export async function submitVisitApprovalCore(
   }
 
   if (role === "ADMIN") {
-    if (await roomHasConflict(room.id, visit.scheduledAt, endTime)) {
+    const hadConflict = await prisma.$transaction(
+      async (tx) => {
+        if (await roomHasConflict(tx, room.id, visit.scheduledAt, endTime)) {
+          return true;
+        }
+        await tx.roomBooking.create({
+          data: {
+            roomId: room.id,
+            visitId: visit.id,
+            requestedById: userId,
+            approvedById: userId,
+            purpose: `Visit: ${visit.visitReason}`,
+            startTime: visit.scheduledAt,
+            endTime,
+            status: "APPROVED",
+            respondedAt: new Date(),
+          },
+        });
+        return false;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    );
+
+    if (hadConflict) {
       return { error: "This room is already booked for that time." };
     }
-
-    await prisma.roomBooking.create({
-      data: {
-        roomId: room.id,
-        visitId: visit.id,
-        requestedById: userId,
-        approvedById: userId,
-        purpose: `Visit: ${visit.visitReason}`,
-        startTime: visit.scheduledAt,
-        endTime,
-        status: "APPROVED",
-        respondedAt: new Date(),
-      },
-    });
 
     try {
       await approveVisitCore(visitId);
@@ -244,22 +267,31 @@ export async function createDirectRoomBookingCore(adminId: string, input: BookRo
     return { error: "Please select a meeting room." };
   }
 
-  if (await roomHasConflict(room.id, startTime, endTime)) {
+  const hadConflict = await prisma.$transaction(
+    async (tx) => {
+      if (await roomHasConflict(tx, room.id, startTime, endTime)) {
+        return true;
+      }
+      await tx.roomBooking.create({
+        data: {
+          roomId: room.id,
+          requestedById: adminId,
+          approvedById: adminId,
+          purpose,
+          startTime,
+          endTime,
+          status: "APPROVED",
+          respondedAt: new Date(),
+        },
+      });
+      return false;
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  );
+
+  if (hadConflict) {
     return { error: "This room is already booked for that time." };
   }
-
-  await prisma.roomBooking.create({
-    data: {
-      roomId: room.id,
-      requestedById: adminId,
-      approvedById: adminId,
-      purpose,
-      startTime,
-      endTime,
-      status: "APPROVED",
-      respondedAt: new Date(),
-    },
-  });
 
   return { success: true };
 }
@@ -326,21 +358,33 @@ export async function bookRoom(
 export async function approveRoomBooking(bookingId: string) {
   const session = await requireAdmin();
 
-  const booking = await prisma.roomBooking.findUniqueOrThrow({ where: { id: bookingId } });
-  if (booking.status !== "PENDING") return; // başka biri zaten işlemiş
+  const outcome = await prisma.$transaction(
+    async (tx) => {
+      const booking = await tx.roomBooking.findUniqueOrThrow({ where: { id: bookingId } });
+      if (booking.status !== "PENDING") return { skipped: true } as const; // başka biri zaten işlemiş
 
-  if (await roomHasConflict(booking.roomId, booking.startTime, booking.endTime, booking.id)) {
+      if (await roomHasConflict(tx, booking.roomId, booking.startTime, booking.endTime, booking.id)) {
+        return { conflict: true } as const;
+      }
+
+      await tx.roomBooking.update({
+        where: { id: bookingId, status: "PENDING" },
+        data: { status: "APPROVED", respondedAt: new Date(), approvedById: session.user!.id },
+      });
+
+      return { visitId: booking.visitId } as const;
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  );
+
+  if ("skipped" in outcome) return;
+  if ("conflict" in outcome) {
     throw new Error("This room is already booked for that time — reject this ticket instead.");
   }
 
   try {
-    await prisma.roomBooking.update({
-      where: { id: bookingId, status: "PENDING" },
-      data: { status: "APPROVED", respondedAt: new Date(), approvedById: session.user!.id },
-    });
-
-    if (booking.visitId) {
-      await approveVisitCore(booking.visitId);
+    if (outcome.visitId) {
+      await approveVisitCore(outcome.visitId);
     }
   } catch (error) {
     if (!isRecordNotFoundError(error)) throw error;
@@ -349,6 +393,49 @@ export async function approveRoomBooking(bookingId: string) {
   revalidatePath("/staff/dashboard");
   revalidatePath("/staff/visits");
   revalidatePath("/staff/rooms");
+}
+
+export type RoomCalendarBooking = {
+  id: string;
+  roomId: string;
+  roomName: string;
+  startTime: Date;
+  endTime: Date;
+  purpose: string;
+  // "Ziyaretçi adı (host ziyaretinde)" ya da "Talep eden adı (iç toplantı)".
+  label: string;
+};
+
+// /staff/rooms'taki aylık takvim ve mobil karşılığı (/api/mobile/rooms/calendar)
+// için — tüm odaların [monthStart, monthEnd) aralığına düşen (kesişen)
+// onaylanmış rezervasyonları. roomHasConflict'in aksine burada geçmiş
+// rezervasyonlar da dahil — takvimde geçmiş aylara bakılabilmesi gerekiyor.
+export async function getRoomBookingsForMonth(monthStart: Date, monthEnd: Date): Promise<RoomCalendarBooking[]> {
+  const bookings = await prisma.roomBooking.findMany({
+    where: {
+      status: "APPROVED",
+      startTime: { lt: monthEnd },
+      endTime: { gt: monthStart },
+    },
+    include: {
+      room: { select: { name: true } },
+      requestedBy: { select: { name: true } },
+      visit: { include: { visitor: true, hostEmployee: { select: { name: true } } } },
+    },
+    orderBy: { startTime: "asc" },
+  });
+
+  return bookings.map((booking) => ({
+    id: booking.id,
+    roomId: booking.roomId,
+    roomName: booking.room.name,
+    startTime: booking.startTime,
+    endTime: booking.endTime,
+    purpose: booking.purpose,
+    label: booking.visit
+      ? `${booking.visit.visitor.name} (${booking.visit.hostEmployee.name} ziyaretinde)`
+      : `${booking.requestedBy.name} (iç toplantı)`,
+  }));
 }
 
 export async function rejectRoomBooking(bookingId: string) {

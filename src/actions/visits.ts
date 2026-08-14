@@ -117,10 +117,13 @@ async function requireHostOrAdmin(hostEmployeeId: string) {
   }
 }
 
-async function requireReceptionistOrAdmin() {
+// Giriş/çıkış onayı sadece RECEPTIONIST'in işi — ADMIN dahil başka hiçbir
+// rol bunu yapamaz (bkz. dashboard'daki "Bugünün ziyaretleri" bölümü de
+// aynı sebeple sadece RECEPTIONIST'e gösteriliyor).
+async function requireReceptionist() {
   const session = await auth();
   const role = session?.user?.role;
-  if (!session || (role !== "ADMIN" && role !== "RECEPTIONIST")) {
+  if (!session || role !== "RECEPTIONIST") {
     throw new Error("Not authorized to check visitors in or out.");
   }
 }
@@ -146,7 +149,7 @@ async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "
 }
 
 // --- Core mutasyonlar: sadece DB güncellemesi + email bildirimi.
-// Yetki kontrolü (requireHostOrAdmin / requireReceptionistOrAdmin) ve
+// Yetki kontrolü (requireHostOrAdmin / requireReceptionist) ve
 // revalidatePath çağıranın (Server Action ya da mobil API route) işi.
 
 export async function approveVisitCore(visitId: string) {
@@ -223,7 +226,7 @@ export async function rejectVisit(visitId: string) {
 }
 
 export async function checkInVisit(visitId: string) {
-  await requireReceptionistOrAdmin();
+  await requireReceptionist();
 
   try {
     await checkInVisitCore(visitId);
@@ -236,7 +239,7 @@ export async function checkInVisit(visitId: string) {
 }
 
 export async function checkOutVisit(visitId: string) {
-  await requireReceptionistOrAdmin();
+  await requireReceptionist();
 
   try {
     await checkOutVisitCore(visitId);

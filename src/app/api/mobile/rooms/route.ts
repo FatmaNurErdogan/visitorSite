@@ -16,7 +16,11 @@ export async function GET(req: Request) {
     orderBy: { name: "asc" },
     include: {
       bookings: {
-        where: { status: "APPROVED" },
+        // Sadece devam eden/gelecekteki rezervasyonlar — client bundan
+        // "current"/"next" hesaplıyor, geçmiş kayıtlar gerekmiyor. Bu hem
+        // sorgunun zamanla sınırsız büyümesini önlüyor hem de eski
+        // ziyaretçi/host bilgisinin gereksiz yere her cihaza dönmesini.
+        where: { status: "APPROVED", endTime: { gte: new Date() } },
         orderBy: { startTime: "asc" },
         include: {
           requestedBy: { select: { id: true, name: true } },

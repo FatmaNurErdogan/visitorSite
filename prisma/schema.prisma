@@ -141,5 +141,9 @@ model RoomBooking {
   requestedAt DateTime  @default(now())
   respondedAt DateTime?
 
+  // Çakışma kontrolü (roomHasConflict, src/actions/rooms.ts) bu kombinasyonla
+  // sorguluyor — SERIALIZABLE transaction altında range lock'un odayı/aralığı
+  // dar tutabilmesi için.
+  @@index([roomId, status, startTime, endTime])
   @@map("vms_room_booking")
 }

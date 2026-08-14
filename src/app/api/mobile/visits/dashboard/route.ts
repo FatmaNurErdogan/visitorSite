@@ -12,7 +12,9 @@ export async function GET(req: Request) {
 
   const { role, sub: userId } = user;
   const showApprovals = role === "EMPLOYEE" || role === "ADMIN";
-  const showTodaysVisits = role === "RECEPTIONIST" || role === "ADMIN";
+  // Giriş/çıkış onayı sadece RECEPTIONIST'in işi — ADMIN dahil burada değil
+  // (bkz. src/actions/visits.ts requireReceptionist).
+  const showTodaysVisits = role === "RECEPTIONIST";
 
   // Herkes (ADMIN dahil) burada sadece kendi host olduğu ziyaretleri görür —
   // bkz. web dashboard'daki aynı yorum (src/app/staff/dashboard/page.tsx).

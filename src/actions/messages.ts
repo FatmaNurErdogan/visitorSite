@@ -9,11 +9,50 @@ export function isChatOpen(status: string) {
   return OPEN_STATUSES.includes(status);
 }
 
+export const MAX_MESSAGE_LENGTH = 2000; // Message.body @db.NVarChar(2000) ile eşleşiyor.
+
+export function validateMessageBody(text: string): string | null {
+  if (!text) return "Message can't be empty.";
+  if (text.length > MAX_MESSAGE_LENGTH) return `Message can't be longer than ${MAX_MESSAGE_LENGTH} characters.`;
+  return null;
+}
+
+// accessToken linki tokenExpiresAt'ten sonra da (visit hâlâ PENDING/ACCEPTED/...
+// olsa bile) süresiz çalışmasın diye — bkz. Visit.tokenExpiresAt.
+export function isTokenValid(visit: { tokenExpiresAt: Date }) {
+  return Date.now() < visit.tokenExpiresAt.getTime();
+}
+
+// Token ile erişilen (ziyaretçi tarafı) sohbetin açık olup olmadığı —
+// hem durum hem de linkin süresi dolmamış olmalı. Personel tarafı
+// (session ile, /api/staff/visits/[id]/messages) bu kontrole tabi değil,
+// sadece isChatOpen(status) kullanır.
+export function isChatOpenForVisitor(visit: { status: string; tokenExpiresAt: Date }) {
+  return isChatOpen(visit.status) && isTokenValid(visit);
+}
+
 export async function getVisitByAccessToken(token: string) {
-  return prisma.visit.findUnique({
+  const visit = await prisma.visit.findUnique({
     where: { accessToken: token },
     include: { visitor: true, hostEmployee: true },
   });
+  if (!visit) return visit;
+
+  // Hiç yanıtlanmamış (PENDING) bir talebin linki süresi dolduysa, durumu
+  // EXPIRED'a çevir — bu değer daha önce hiçbir yerde set edilmiyordu.
+  // Zaten kabul edilmiş/reddedilmiş/tamamlanmış ziyaretlerin durumunu
+  // burada değiştirmiyoruz; onlar için erişim isChatOpenForVisitor
+  // üzerinden tokenExpiresAt kontrolüyle zaten kapanıyor.
+  if (visit.status === "PENDING" && !isTokenValid(visit)) {
+    const expired = await prisma.visit.update({
+      where: { id: visit.id, status: "PENDING" },
+      data: { status: "EXPIRED" },
+      include: { visitor: true, hostEmployee: true },
+    }).catch(() => null);
+    return expired ?? visit;
+  }
+
+  return visit;
 }
 
 export async function listMessagesCore(visitId: string) {
