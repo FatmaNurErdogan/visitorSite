@@ -10,7 +10,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   if (user.role !== "RECEPTIONIST") {
-    return NextResponse.json({ error: "Only reception can check visitors out." }, { status: 403 });
+    return NextResponse.json({ error: "Not authorized to check visitors out." }, { status: 403 });
   }
 
   const { id } = await params;

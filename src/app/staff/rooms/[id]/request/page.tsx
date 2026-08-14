@@ -1,16 +1,18 @@
-// /staff/rooms/[roomId]/book — herhangi bir personelin bağımsız bir toplantı
-// odası rezervasyonu talep ettiği sayfa. Çakışmayı önceden görebilmesi için
-// odanın onaylanmış/bekleyen yaklaşan rezervasyonları da burada listeleniyor.
+// /staff/rooms/[id]/request — herhangi bir personelin bağımsız bir toplantı
+// odası rezervasyonu talep ettiği sayfa (admin onayı bekler). Çakışmayı
+// önceden görebilmesi için odanın onaylanmış/bekleyen yaklaşan rezervasyonları
+// da burada listeleniyor. ADMIN'in onaysız direkt rezervasyonu için bkz.
+// /staff/rooms/[id]/book.
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { RoomBookingForm } from "@/components/RoomBookingForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function BookRoomPage({ params }: { params: Promise<{ roomId: string }> }) {
-  const { roomId } = await params;
+export default async function RequestRoomPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-  const room = await prisma.meetingRoom.findUnique({ where: { id: roomId } });
+  const room = await prisma.meetingRoom.findUnique({ where: { id } });
   if (!room) {
     return (
       <main className="page-container">
@@ -22,7 +24,7 @@ export default async function BookRoomPage({ params }: { params: Promise<{ roomI
 
   const upcomingBookings = await prisma.roomBooking.findMany({
     where: {
-      roomId,
+      roomId: id,
       status: { in: ["APPROVED", "PENDING"] },
       endTime: { gte: new Date() },
     },
@@ -31,7 +33,7 @@ export default async function BookRoomPage({ params }: { params: Promise<{ roomI
 
   return (
     <main className="page-container">
-      <h1>Book {room.name}</h1>
+      <h1>Request {room.name}</h1>
       <p>
         <Link href="/staff/rooms">Back to rooms</Link>
       </p>

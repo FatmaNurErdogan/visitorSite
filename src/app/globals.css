@@ -224,6 +224,84 @@ a {
   }
 }
 
+.calendar-section {
+  margin-top: 32px;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.calendar-nav h2 {
+  font-size: 18px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: #757575;
+  padding: 4px 0;
+}
+
+.calendar-day {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  font-size: 13px;
+}
+
+.calendar-day-empty {
+  border-color: transparent;
+}
+
+.calendar-day-has-bookings {
+  cursor: pointer;
+  background: #d4edda;
+  border-color: #1a7f37;
+  color: #1a7f37;
+}
+
+.calendar-day-selected {
+  background: #171717;
+  border-color: #171717;
+  color: #ffffff;
+}
+
+.calendar-day-today {
+  font-weight: bold;
+}
+
+.calendar-day-count {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.calendar-day-detail {
+  margin-top: 20px;
+}
+
+@media (max-width: 640px) {
+  .calendar-day {
+    font-size: 11px;
+  }
+}
+
 .chat-box {
   display: flex;
   flex-direction: column;

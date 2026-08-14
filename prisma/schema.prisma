@@ -21,6 +21,7 @@ datasource db {
 //   | "REJECTED" (reddedildi) | "CHECKED_IN" (içeri girdi) | "CHECKED_OUT" (çıktı)
 //   | "CANCELLED" (iptal edildi) | "EXPIRED" (süresi doldu)
 // RoomBookingStatus: "PENDING" (admin onayı bekliyor) | "APPROVED" (onaylandı) | "REJECTED" (reddedildi)
+//   | "CANCELLED" (doğrudan rezervasyon süresi dolmadan admin tarafından iptal edildi)
 
 model Staff {
   id           String   @id @default(cuid())
@@ -145,5 +146,9 @@ model RoomBooking {
   requestedAt DateTime  @default(now())
   respondedAt DateTime?
 
+  // Çakışma kontrolü (roomHasConflict, src/actions/rooms.ts) bu kombinasyonla
+  // sorguluyor — SERIALIZABLE transaction altında range lock'un odayı/aralığı
+  // dar tutabilmesi için.
+  @@index([roomId, status, startTime, endTime])
   @@map("vms_room_booking")
 }
