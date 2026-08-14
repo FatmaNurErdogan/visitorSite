@@ -1,23 +1,20 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getMobileUser } from "@/lib/mobileAuth";
-import { createStaffAccountCore } from "@/actions/staff";
+import { createDepartmentCore, listDepartments } from "@/actions/departments";
 
-// staff-users sayfasının eşleniği — sadece ADMIN.
+// Personel formundaki "Departman" seçim listesinin kaynağı — herhangi bir
+// giriş yapmış personel görebilir (staff-users sayfasının eşleniği gibi).
 export async function GET(req: Request) {
   const user = await getMobileUser(req);
-  if (!user || user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: user ? 403 : 401 });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const staff = await prisma.staff.findMany({
-    select: { id: true, name: true, email: true, role: true, department: true, createdAt: true },
-    orderBy: { name: "asc" },
-  });
-
-  return NextResponse.json({ staff });
+  const departments = await listDepartments();
+  return NextResponse.json({ departments });
 }
 
+// Sadece ADMIN yeni departman ekleyebilir.
 export async function POST(req: Request) {
   const user = await getMobileUser(req);
   if (!user || user.role !== "ADMIN") {
@@ -29,13 +26,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const result = await createStaffAccountCore({
-    name: body.name,
-    email: body.email,
-    password: body.password,
-    role: body.role,
-    department: body.department || undefined,
-  });
+  const result = await createDepartmentCore(body.name);
 
   if (result.error) {
     return NextResponse.json({ error: result.error }, { status: 400 });

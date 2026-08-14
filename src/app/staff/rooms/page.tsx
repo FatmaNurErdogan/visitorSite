@@ -9,6 +9,20 @@ export const dynamic = "force-dynamic";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+// Google Calendar'daki gibi odaya göre renklendirme — hangi rengin hangi
+// odaya düştüğü bir ay içinde sabit kalsın diye roomId'lerin sıralı
+// listesindeki index'ine göre seçiliyor (bkz. CalendarSection).
+const CALENDAR_PALETTE = [
+  { bg: "#d4edda", ink: "#1a7f37" },
+  { bg: "#cfe2ff", ink: "#084298" },
+  { bg: "#fff3cd", ink: "#7a5b00" },
+  { bg: "#f8d7da", ink: "#b3261e" },
+  { bg: "#e5d9f8", ink: "#6f42c1" },
+  { bg: "#ffe1c7", ink: "#c97b3d" },
+];
+
+const MAX_CHIPS_PER_DAY = 3;
+
 function dayKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
@@ -167,6 +181,10 @@ async function CalendarSection({
   const selectedDay = dayParam && bookingsByDay.has(dayParam) ? dayParam : undefined;
   const selectedBookings = selectedDay ? bookingsByDay.get(selectedDay)! : [];
 
+  // Odaya göre sabit bir renk ataması — bkz. CALENDAR_PALETTE.
+  const roomIds = Array.from(new Set(bookings.map((b) => b.roomId))).sort();
+  const colorForRoom = (roomId: string) => CALENDAR_PALETTE[roomIds.indexOf(roomId) % CALENDAR_PALETTE.length];
+
   return (
     <section className="calendar-section">
       <div className="calendar-nav">
@@ -185,7 +203,8 @@ async function CalendarSection({
           if (!date) return <div key={i} className="calendar-day calendar-day-empty" />;
 
           const key = dayKey(date);
-          const count = bookingsByDay.get(key)?.length ?? 0;
+          const dayBookings = bookingsByDay.get(key) ?? [];
+          const count = dayBookings.length;
           const classNames = ["calendar-day"];
           if (count > 0) classNames.push("calendar-day-has-bookings");
           if (key === selectedDay) classNames.push("calendar-day-selected");
@@ -194,7 +213,22 @@ async function CalendarSection({
           const inner = (
             <>
               <span className="calendar-day-number">{date.getDate()}</span>
-              {count > 0 && <span className="calendar-day-count">{count}</span>}
+              <div className="calendar-day-events">
+                {dayBookings.slice(0, MAX_CHIPS_PER_DAY).map((booking) => {
+                  const color = colorForRoom(booking.roomId);
+                  return (
+                    <span
+                      key={booking.id}
+                      className="calendar-event-chip"
+                      style={{ background: color.bg, color: color.ink }}
+                    >
+                      {booking.startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}{" "}
+                      {booking.roomName}
+                    </span>
+                  );
+                })}
+                {count > MAX_CHIPS_PER_DAY && <span className="calendar-more">+{count - MAX_CHIPS_PER_DAY} more</span>}
+              </div>
             </>
           );
 

@@ -16,6 +16,7 @@ export type CreateStaffAccountInput = {
   email: string;
   password: string;
   role: string;
+  department?: string;
 };
 
 async function requireAdmin() {
@@ -51,9 +52,11 @@ export async function createStaffAccountCore(input: CreateStaffAccountInput): Pr
     return { error: "An account with this email already exists." };
   }
 
+  const department = input.department?.trim() || undefined;
+
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.staff.create({
-    data: { name, email, passwordHash, role },
+    data: { name, email, passwordHash, role, department },
   });
 
   return { success: true };
@@ -70,6 +73,7 @@ export async function createStaffAccount(
     email: formData.get("email") as string,
     password: formData.get("password") as string,
     role: formData.get("role") as string,
+    department: (formData.get("department") as string) || undefined,
   });
 
   if (result.success) {

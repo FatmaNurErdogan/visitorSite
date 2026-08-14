@@ -1,0 +1,25 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- CreateTable
+CREATE TABLE [dbo].[vms_department] (
+    [id] NVARCHAR(1000) NOT NULL,
+    [name] NVARCHAR(1000) NOT NULL,
+    [createdAt] DATETIME2 NOT NULL CONSTRAINT [vms_department_createdAt_df] DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT [vms_department_pkey] PRIMARY KEY CLUSTERED ([id]),
+    CONSTRAINT [vms_department_name_key] UNIQUE NONCLUSTERED ([name])
+);
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH

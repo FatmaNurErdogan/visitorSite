@@ -29,6 +29,9 @@ model Staff {
   email        String   @unique
   passwordHash String
   role         String   @default("EMPLOYEE")
+  // Serbest metin olarak kalıyor (Department tablosuna FK değil) — mevcut
+  // kayıtları bozmadan, personel formundaki seçim listesi sadece
+  // Department tablosundan besleniyor. Bkz. src/actions/departments.ts.
   department   String?
   createdAt    DateTime @default(now())
 
@@ -100,6 +103,17 @@ model Message {
   createdAt DateTime @default(now())
 
   @@map("vms_message")
+}
+
+// Personel formundaki "Departman" alanının seçim listesi — ADMIN
+// /staff/departments'tan yeni departman ekleyebilir. Staff.department bu
+// tabloya FK değil (bkz. Staff modelindeki not), sadece isim kaynağı.
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("vms_department")
 }
 
 model MeetingRoom {

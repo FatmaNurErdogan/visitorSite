@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { createStaffAccount } from "@/actions/staff";
 
-export function StaffAccountForm() {
+export function StaffAccountForm({ departments }: { departments: { id: string; name: string }[] }) {
   const [state, formAction, isPending] = useActionState(createStaffAccount, undefined);
 
   return (
@@ -35,6 +35,19 @@ export function StaffAccountForm() {
           <option value="EMPLOYEE">Employee</option>
           <option value="RECEPTIONIST">Receptionist</option>
           <option value="ADMIN">Admin</option>
+        </select>
+      </div>
+      <div className="form-group">
+        <label className="form-label" htmlFor="department">
+          Department
+        </label>
+        <select className="form-input" id="department" name="department" defaultValue="">
+          <option value="">No department</option>
+          {departments.map((department) => (
+            <option key={department.id} value={department.name}>
+              {department.name}
+            </option>
+          ))}
         </select>
       </div>
       {state?.error && <p className="form-error">{state.error}</p>}

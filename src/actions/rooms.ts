@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isRecordNotFoundError } from "@/lib/prismaErrors";
+import { approveVisitCore } from "@/actions/visits";
 
 async function requireAdmin() {
   const session = await auth();

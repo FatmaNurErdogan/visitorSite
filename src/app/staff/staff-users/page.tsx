@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { listDepartments } from "@/actions/departments";
 import { StaffAccountForm } from "@/components/StaffAccountForm";
 
 export default async function StaffUsersPage() {
@@ -19,16 +20,19 @@ export default async function StaffUsersPage() {
     );
   }
 
-  const staff = await prisma.staff.findMany({ orderBy: { name: "asc" } });
+  const [staff, departments] = await Promise.all([
+    prisma.staff.findMany({ orderBy: { name: "asc" } }),
+    listDepartments(),
+  ]);
 
   return (
     <main className="staff-users-page page-container-wide">
       <h1>Staff Accounts</h1>
       <p>
-        <Link href="/staff/dashboard">Dashboard</Link>
+        <Link href="/staff/dashboard">Dashboard</Link> &middot; <Link href="/staff/departments">Departments</Link>
       </p>
 
-      <StaffAccountForm />
+      <StaffAccountForm departments={departments} />
 
       <table className="table">
         <thead>

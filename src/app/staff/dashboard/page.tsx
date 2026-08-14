@@ -88,7 +88,8 @@ export default async function StaffDashboardPage() {
         {role === "ADMIN" && (
           <>
             {" "}
-            &middot; <Link href="/staff/staff-users">Staff accounts</Link>
+            &middot; <Link href="/staff/staff-users">Staff accounts</Link> &middot;{" "}
+            <Link href="/staff/departments">Departments</Link>
           </>
         )}
       </p>

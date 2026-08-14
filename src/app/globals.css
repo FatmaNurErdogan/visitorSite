@@ -253,17 +253,21 @@ a {
   padding: 4px 0;
 }
 
+/* Google Calendar'ın ay görünümüne benzer: her hücre kendi rezervasyonlarını
+   renkli, saatli küçük "chip"ler halinde doğrudan gösteriyor — sayıya
+   tıklayıp ayrı bir listeye bakmaya gerek kalmıyor. */
 .calendar-day {
   position: relative;
-  aspect-ratio: 1;
+  min-height: 84px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
   gap: 2px;
+  padding: 4px;
   border-radius: 8px;
   border: 1px solid #e0e0e0;
   font-size: 13px;
+  overflow: hidden;
 }
 
 .calendar-day-empty {
@@ -272,24 +276,46 @@ a {
 
 .calendar-day-has-bookings {
   cursor: pointer;
-  background: #d4edda;
-  border-color: #1a7f37;
-  color: #1a7f37;
+}
+
+.calendar-day-has-bookings:hover {
+  border-color: #757575;
 }
 
 .calendar-day-selected {
-  background: #171717;
-  border-color: #171717;
-  color: #ffffff;
+  border: 2px solid #171717;
 }
 
-.calendar-day-today {
+.calendar-day-today .calendar-day-number {
   font-weight: bold;
+  text-decoration: underline;
 }
 
-.calendar-day-count {
-  font-size: 11px;
-  opacity: 0.85;
+.calendar-day-number {
+  font-size: 12px;
+}
+
+.calendar-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.calendar-event-chip {
+  display: block;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-more {
+  font-size: 10px;
+  color: #757575;
+  padding: 0 4px;
 }
 
 .calendar-day-detail {
@@ -298,7 +324,12 @@ a {
 
 @media (max-width: 640px) {
   .calendar-day {
+    min-height: 64px;
     font-size: 11px;
+  }
+
+  .calendar-event-chip {
+    font-size: 9px;
   }
 }
 
