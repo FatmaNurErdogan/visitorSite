@@ -1,64 +1,70 @@
-/* Design tokens mirror the Flutter app's Vizit theme 1:1 (see
-   lib/theme/app_theme.dart in the visitorManagmentSite_frontend repo) —
-   same "Bulut" palette: soft green light theme, vivid purple dark theme,
-   pill-shaped controls, soft-shadow cards instead of borders. */
+/* Design tokens: Horizon UI palette (https://github.com/horizon-ui/horizon-tailwind-react-nextjs
+   tailwind.config.js — brand/navy/gray) swapped in over onat's existing
+   Bulut-shaped structure below (pill controls, soft-shadow cards, same class
+   names/selectors) — only the color values changed, per explicit request to
+   keep the Turkish copy, bfcache fix, and custom dropdown untouched.
+   --color-surface is new: separates the page background from card/sidebar
+   "elevated" surfaces (Horizon uses white cards on a light lavender page —
+   onat's original tokens conflated the two into one --color-bg). */
 :root {
-  --color-bg: #fcfefc;
-  --color-primary: #63b686;
+  --color-bg: #f4f7fe;
+  --color-surface: #ffffff;
+  --color-primary: #422afb;
   --color-on-primary: #ffffff;
 
-  --color-ink: #33453a;
-  --color-soft: #82998a;
-  --color-field: #e6f5ea;
-  --color-divider: #cfead4;
+  --color-ink: #1b254b;
+  --color-soft: #707eae;
+  --color-field: #f4f7fe;
+  --color-divider: #eef0f6;
 
-  --color-outline-bg: #e6f5ea;
-  --color-outline-ink: #4f8a66;
+  --color-outline-bg: #e9e3ff;
+  --color-outline-ink: #422afb;
 
-  --color-chip-bg: #ffe1c7;
-  --color-chip-ink: #c97b3d;
+  --color-chip-bg: #e9e3ff;
+  --color-chip-ink: #3311db;
 
-  --color-accept-bg: #cde9ff;
-  --color-accept-ink: #3a7ea8;
+  --color-accept-bg: #e6faf5;
+  --color-accept-ink: #05a878;
 
-  --color-warn-bg: #fcf0d6;
-  --color-warn-ink: #b4790f;
+  --color-warn-bg: #fff6e6;
+  --color-warn-ink: #b7791f;
 
-  --color-danger-bg: #fae1dc;
-  --color-danger-ink: #b93f30;
+  --color-danger-bg: #fee2e2;
+  --color-danger-ink: #d1382c;
 
   --shadow-card:
-    0 2px 4px rgba(99, 182, 134, 0.08),
-    0 12px 26px rgba(99, 182, 134, 0.3);
+    0 2px 4px rgba(67, 44, 243, 0.05),
+    0 12px 30px rgba(67, 44, 243, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #211f2c;
-    --color-primary: #9c8cff;
-    --color-on-primary: #1b1730;
+    --color-bg: #0b1437;
+    --color-surface: #111c44;
+    --color-primary: #7551ff;
+    --color-on-primary: #ffffff;
 
-    --color-ink: #edebf7;
-    --color-soft: #9a94b8;
-    --color-field: #29273a;
-    --color-divider: #2b2839;
+    --color-ink: #ffffff;
+    --color-soft: #a3aed0;
+    --color-field: #1b254b;
+    --color-divider: #1b254b;
 
-    --color-outline-bg: #29273a;
-    --color-outline-ink: #b6acff;
+    --color-outline-bg: rgba(117, 81, 255, 0.18);
+    --color-outline-ink: #a7abff;
 
-    --color-chip-bg: rgba(255, 145, 92, 0.16);
-    --color-chip-ink: #ffb185;
+    --color-chip-bg: rgba(117, 81, 255, 0.22);
+    --color-chip-ink: #a7abff;
 
-    --color-accept-bg: rgba(126, 232, 192, 0.16);
-    --color-accept-ink: #7ee8c0;
+    --color-accept-bg: rgba(5, 205, 153, 0.14);
+    --color-accept-ink: #05cd99;
 
-    --color-warn-bg: rgba(231, 182, 85, 0.2);
-    --color-warn-ink: #e7b655;
+    --color-warn-bg: rgba(255, 181, 71, 0.16);
+    --color-warn-ink: #ffb547;
 
-    --color-danger-bg: rgba(227, 137, 124, 0.2);
-    --color-danger-ink: #e3897c;
+    --color-danger-bg: rgba(238, 93, 80, 0.16);
+    --color-danger-ink: #ff8177;
 
-    --shadow-card: 5px 5px 14px rgba(0, 0, 0, 0.45);
+    --shadow-card: 5px 5px 14px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -152,12 +158,191 @@ p:last-child {
   flex-shrink: 0;
 }
 
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.page-eyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-soft);
+  margin-bottom: 4px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-ink);
+  margin-bottom: 0;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .card {
-  background: var(--color-bg);
+  background: var(--color-surface);
   box-shadow: var(--shadow-card);
   border-radius: 22px;
   padding: 20px;
   margin-bottom: 16px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-ink);
+}
+
+/* Panel üstündeki özet sayı kartları ("Bugünkü ziyaretler", "Onay bekleyen"
+   gibi) — Horizon UI'ın Widget bileşeninin karşılığı. */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 720px) {
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--color-outline-bg);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-soft);
+  margin-bottom: 2px;
+}
+
+.kpi-value {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--color-ink);
+}
+
+/* Onay bekleyen ziyaret satırları — baş harf rozeti + isim/detay + aksiyon. */
+.approval-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.approval-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.approval-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.approval-row-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.approval-row-meta {
+  font-size: 12px;
+  color: var(--color-soft);
+}
+
+.approval-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.avatar-chip {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #868cff, var(--color-primary));
+}
+
+/* Panel sağındaki oda-durum kartları (dolu/müsait) — bkz. staff/dashboard. */
+.room-status-card {
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.room-status-card:last-of-type {
+  margin-bottom: 14px;
+}
+
+.room-status-card-busy {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-ink);
+}
+
+.room-status-card-free {
+  background: var(--color-accept-bg);
+  color: var(--color-accept-ink);
+}
+
+.room-status-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  display: block;
+}
+
+.room-status-meta {
+  font-size: 11.5px;
+  opacity: 0.85;
 }
 
 .form-group {
@@ -322,7 +507,7 @@ select.form-input {
   list-style: none;
   margin: 0;
   padding: 6px;
-  background: var(--color-bg);
+  background: var(--color-surface);
   box-shadow: var(--shadow-card);
   border-radius: 16px;
   z-index: 50;
@@ -451,7 +636,7 @@ select.form-input {
   }
 
   .table tr {
-    background: var(--color-bg);
+    background: var(--color-surface);
     box-shadow: var(--shadow-card);
     border-radius: 18px;
     padding: 14px;
@@ -459,7 +644,7 @@ select.form-input {
   }
 
   .table tbody tr:hover {
-    background: var(--color-bg);
+    background: var(--color-surface);
   }
 
   .table td {
@@ -593,7 +778,7 @@ select.form-input {
 .chat-box {
   display: flex;
   flex-direction: column;
-  background: var(--color-bg);
+  background: var(--color-surface);
   box-shadow: var(--shadow-card);
   border-radius: 20px;
   overflow: hidden;
@@ -673,7 +858,7 @@ select.form-input {
   height: 100vh;
   padding: 24px 16px;
   border-right: 1px solid var(--color-divider);
-  background: var(--color-bg);
+  background: var(--color-surface);
   z-index: 10;
 }
 
@@ -798,7 +983,7 @@ select.form-input {
     padding: 8px 10px;
     border-right: none;
     border-top: 1px solid var(--color-divider);
-    background: var(--color-bg);
+    background: var(--color-surface);
     box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.06);
     z-index: 50;
   }

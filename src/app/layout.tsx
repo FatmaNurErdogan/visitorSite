@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Foyer",
+  title: "Visit",
   description: "Ziyaretçi ve toplantı odası yönetimi",
 };
 

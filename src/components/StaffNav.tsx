@@ -29,8 +29,8 @@ export function StaffNav({ role, name }: { role?: string; name?: string }) {
   return (
     <nav className="staff-nav">
       <div className="staff-nav-brand">
-        <span className="staff-nav-logo">F</span>
-        <span>Foyer</span>
+        <span className="staff-nav-logo">V</span>
+        <span>Visit</span>
       </div>
 
       <div className="staff-nav-links">

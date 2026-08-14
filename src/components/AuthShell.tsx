@@ -15,8 +15,8 @@ export function AuthShell({
         <div className="auth-hero-blob auth-hero-blob-1" />
         <div className="auth-hero-blob auth-hero-blob-2" />
         <div className="auth-hero-content">
-          <div className="auth-hero-logo">F</div>
-          <div className="auth-hero-title">Foyer</div>
+          <div className="auth-hero-logo">V</div>
+          <div className="auth-hero-title">Visit</div>
           <p className="auth-hero-tagline">{tagline ?? "Ziyaretçi yönetimi, doğru şekilde."}</p>
         </div>
       </div>
