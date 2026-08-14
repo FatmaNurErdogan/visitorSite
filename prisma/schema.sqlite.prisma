@@ -1,0 +1,147 @@
+// A structural mirror of schema.prisma, pointed at a local SQLite file
+// instead of the office's SQL Server, for testing when there's no network
+// route to the real database. Same models/relations/fields — only the
+// datasource provider and the SQL-Server-only @db.NVarChar(n) native-type
+// annotations (unsupported outside the sqlserver connector) are dropped.
+//
+// This has its own generator `output` so `npx prisma generate` for THIS
+// file never touches the real @prisma/client used by the app — keep it
+// that way, or `npm run dev` in this repo (yours or anyone else's) will
+// start talking to SQLite instead of the real database.
+//
+// Usage:
+//   npm run db:test:push   # (re)create prisma/test.db from this schema
+//   npm run db:test:seed   # fill it with a few sample rows
+//   npm run dev:test       # run the app against it (see src/lib/prisma.ts)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client-test"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("TEST_DATABASE_URL")
+}
+
+model Staff {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("EMPLOYEE")
+  department   String?
+  createdAt    DateTime @default(now())
+
+  hostedVisits Visit[]    @relation("HostEmployee")
+  sentMessages Message[]  @relation("StaffMessages")
+
+  roomBookingsRequested RoomBooking[] @relation("RoomBookingRequestedBy")
+  roomBookingsApproved  RoomBooking[] @relation("RoomBookingApprovedBy")
+
+  @@map("vms_staff")
+}
+
+model Visitor {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  company   String?
+  createdAt DateTime @default(now())
+
+  visits Visit[]
+
+  @@map("vms_visitor")
+}
+
+model Visit {
+  id             String  @id @default(cuid())
+  visitor        Visitor @relation(fields: [visitorId], references: [id])
+  visitorId      String
+  hostEmployee   Staff   @relation("HostEmployee", fields: [hostEmployeeId], references: [id])
+  hostEmployeeId String
+
+  visitReason String
+  scheduledAt DateTime
+  scheduledEndAt DateTime
+  status      String   @default("PENDING")
+
+  accessToken    String   @unique
+  tokenExpiresAt DateTime
+
+  requestedAt  DateTime  @default(now())
+  respondedAt  DateTime?
+  checkedInAt  DateTime?
+  checkedOutAt DateTime?
+
+  adminRejectionReason String?
+
+  messages     Message[]
+  roomBookings RoomBooking[]
+
+  @@index([hostEmployeeId, status, scheduledAt, scheduledEndAt])
+  @@map("vms_visit")
+}
+
+model Message {
+  id      String @id @default(cuid())
+  visit   Visit  @relation(fields: [visitId], references: [id])
+  visitId String
+
+  senderType    String
+  senderStaff   Staff?  @relation("StaffMessages", fields: [senderStaffId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  senderStaffId String?
+
+  body      String
+  createdAt DateTime @default(now())
+
+  @@map("vms_message")
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("vms_department")
+}
+
+model MeetingRoom {
+  id       String  @id @default(cuid())
+  name     String  @unique
+  location String?
+  capacity Int?
+  perks     String?
+  createdAt DateTime @default(now())
+
+  bookings RoomBooking[]
+
+  @@map("vms_meeting_room")
+}
+
+model RoomBooking {
+  id     String      @id @default(cuid())
+  room   MeetingRoom @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roomId String
+
+  visit   Visit?  @relation(fields: [visitId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  visitId String?
+
+  requestedBy   Staff  @relation("RoomBookingRequestedBy", fields: [requestedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  requestedById String
+
+  approvedBy   Staff?  @relation("RoomBookingApprovedBy", fields: [approvedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approvedById String?
+
+  purpose   String
+  startTime DateTime
+  endTime   DateTime
+
+  status      String    @default("PENDING")
+  requestedAt DateTime  @default(now())
+  respondedAt DateTime?
+
+  @@index([roomId, status, startTime, endTime])
+  @@map("vms_room_booking")
+}

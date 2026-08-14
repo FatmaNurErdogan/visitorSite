@@ -41,3 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# local SQLite mirror used for testing without DB network access
+# (bkz. prisma/schema.sqlite.prisma) — regenerable, never real data
+# (the generated test client itself lives under /node_modules, already ignored above)
+/prisma/test.db
+/prisma/test.db-journal

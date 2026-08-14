@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:test": "USE_TEST_DB=true next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:test:push": "prisma db push --schema=prisma/schema.sqlite.prisma",
+    "db:test:seed": "node prisma/seed-test.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
