@@ -1,4 +1,5 @@
 import { getResend } from "@/lib/email/resend";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 // Çalışan onayla/reddet dediğinde ziyaretçiye "talebiniz onaylandı/reddedildi"
 // diye giden mail. sendHostRequestNotification'ın ziyaretçi tarafındaki karşılığı.
@@ -19,14 +20,14 @@ export async function sendVisitorDecisionNotification(
     subject: isApproved ? "Your visit request was approved" : "Your visit request was declined",
     html: isApproved
       ? `
-        <p>Hi ${visitorName},</p>
-        <p>Your request to visit ${hostName} has been <strong>approved</strong>.</p>
-        <p>See you soon! You can also <a href="${visitUrl}">message ${hostName} directly</a> before you arrive.</p>
+        <p>Hi ${escapeHtml(visitorName)},</p>
+        <p>Your request to visit ${escapeHtml(hostName)} has been <strong>approved</strong>.</p>
+        <p>See you soon! You can also <a href="${visitUrl}">message ${escapeHtml(hostName)} directly</a> before you arrive.</p>
       `
       : `
-        <p>Hi ${visitorName},</p>
-        <p>Your request to visit ${hostName} has been <strong>declined</strong>.</p>
-        ${reason ? `<p>Reason: ${reason}</p>` : ""}
+        <p>Hi ${escapeHtml(visitorName)},</p>
+        <p>Your request to visit ${escapeHtml(hostName)} has been <strong>declined</strong>.</p>
+        ${reason ? `<p>Reason: ${escapeHtml(reason)}</p>` : ""}
         <p>Feel free to submit a new request for a different time.</p>
       `,
   });

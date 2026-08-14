@@ -1,4 +1,5 @@
 import { getResend } from "@/lib/email/resend";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 export async function sendHostRequestNotification(
   hostEmail: string,
@@ -13,8 +14,8 @@ export async function sendHostRequestNotification(
     to: hostEmail,
     subject: `New visit request from ${visitorName}`,
     html: `
-      <p>${visitorName} has requested to visit you on ${scheduledAt.toLocaleString()}.</p>
-      <p>Reason: ${visitReason}</p>
+      <p>${escapeHtml(visitorName)} has requested to visit you on ${scheduledAt.toLocaleString()}.</p>
+      <p>Reason: ${escapeHtml(visitReason)}</p>
       <p>Log in to <a href="${dashboardUrl}">your dashboard</a> to approve or reject this request.</p>
     `,
   });
@@ -28,7 +29,7 @@ export async function sendVisitorArrivedNotification(hostEmail: string, visitorN
     to: hostEmail,
     subject: `${visitorName} has arrived`,
     html: `
-      <p>${visitorName} has checked in at reception and is on their way to you.</p>
+      <p>${escapeHtml(visitorName)} has checked in at reception and is on their way to you.</p>
     `,
   });
 }
@@ -41,7 +42,7 @@ export async function sendVisitorDepartedNotification(hostEmail: string, visitor
     to: hostEmail,
     subject: `${visitorName} has left`,
     html: `
-      <p>${visitorName} has checked out at reception and left the building.</p>
+      <p>${escapeHtml(visitorName)} has checked out at reception and left the building.</p>
     `,
   });
 }
@@ -63,13 +64,13 @@ export async function sendHostFinalDecisionNotification(
     subject: isApproved ? `${visitorName}'s visit was approved` : `${visitorName}'s visit was rejected`,
     html: isApproved
       ? `
-        <p>Hi ${hostName},</p>
-        <p>The visit request from ${visitorName} that you approved has now been <strong>finally approved</strong> by the department admin. The visitor has been notified.</p>
+        <p>Hi ${escapeHtml(hostName)},</p>
+        <p>The visit request from ${escapeHtml(visitorName)} that you approved has now been <strong>finally approved</strong> by the department admin. The visitor has been notified.</p>
       `
       : `
-        <p>Hi ${hostName},</p>
-        <p>The visit request from ${visitorName} that you approved was <strong>rejected</strong> by the department admin.</p>
-        ${reason ? `<p>Reason: ${reason}</p>` : ""}
+        <p>Hi ${escapeHtml(hostName)},</p>
+        <p>The visit request from ${escapeHtml(visitorName)} that you approved was <strong>rejected</strong> by the department admin.</p>
+        ${reason ? `<p>Reason: ${escapeHtml(reason)}</p>` : ""}
       `,
   });
 }

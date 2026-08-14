@@ -1,4 +1,5 @@
 import { getResend } from "@/lib/email/resend";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 // Personel bir ziyaret talebini onayladığında, o departmanın admin'ine
 // (departmanın admin'i yoksa genel admin'e) giden "senin onayın bekleniyor" maili.
@@ -16,8 +17,8 @@ export async function sendAdminPendingApprovalNotification(
     to: adminEmail,
     subject: `Approval needed: ${visitorName}'s visit to ${hostName}`,
     html: `
-      <p>${hostName} approved a visit request from ${visitorName} on ${scheduledAt.toLocaleString()}.</p>
-      <p>Reason: ${visitReason}</p>
+      <p>${escapeHtml(hostName)} approved a visit request from ${escapeHtml(visitorName)} on ${scheduledAt.toLocaleString()}.</p>
+      <p>Reason: ${escapeHtml(visitReason)}</p>
       <p>It's now waiting on your final approval. Log in to <a href="${dashboardUrl}">your dashboard</a> to approve or reject it.</p>
     `,
   });
