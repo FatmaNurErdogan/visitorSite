@@ -52,6 +52,10 @@ export default async function StaffDashboardPage() {
       })
     : [];
 
+  // Son onayı verirken admin isteğe bağlı bir oda da atayabilsin diye —
+  // bkz. approveVisitByAdminCore.
+  const rooms = showAdminApprovals ? await prisma.meetingRoom.findMany({ orderBy: { name: "asc" } }) : [];
+
   const pendingRoomRequests = showRoomRequests
     ? await prisma.roomBooking.findMany({
         where: { status: "PENDING" },
@@ -128,7 +132,15 @@ export default async function StaffDashboardPage() {
                 {visit.hostEmployee.name} adlı çalışanı {visit.scheduledAt.toLocaleString()} – {visit.scheduledEndAt.toLocaleTimeString()} tarihinde ziyaret etmek istiyor
               </p>
               <p>Sebep: {visit.visitReason}</p>
-              <form action={approveVisitByAdmin.bind(null, visit.id)} style={{ display: "inline" }}>
+              <form action={approveVisitByAdmin.bind(null, visit.id)} className="admin-approve-form">
+                <select className="form-input" name="roomId" defaultValue="">
+                  <option value="">Oda atama (opsiyonel)</option>
+                  {rooms.map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.name}
+                    </option>
+                  ))}
+                </select>
                 <SubmitButton className="btn btn-success" pendingText="Onaylanıyor...">
                   <CheckCircle2 size={15} strokeWidth={2} /> Onayla
                 </SubmitButton>

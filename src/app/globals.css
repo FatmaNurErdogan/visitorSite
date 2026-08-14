@@ -469,6 +469,20 @@ select.form-input {
   width: 240px;
 }
 
+.admin-approve-form {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  vertical-align: top;
+  width: 200px;
+  margin-right: 8px;
+}
+
+.admin-approve-form select.form-input {
+  padding: 10px 40px 10px 16px;
+  font-size: 13.5px;
+}
+
 .badge-accepted {
   background: var(--color-accept-bg);
   color: var(--color-accept-ink);

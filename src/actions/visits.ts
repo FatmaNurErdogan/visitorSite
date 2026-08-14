@@ -14,6 +14,7 @@ import {
 } from "@/lib/email/notifyHost";
 import { sendAdminPendingApprovalNotification } from "@/lib/email/notifyAdmin";
 import { sendVisitorDecisionNotification } from "@/lib/email/notifyVisitor";
+import { createDirectRoomBookingCore } from "@/actions/rooms";
 
 export type VisitRequestState = {
   error?: string;
@@ -219,7 +220,12 @@ async function getAdminsToNotify(hostEmployeeId: string) {
   return prisma.staff.findMany({ where: { role: "ADMIN", department: null } });
 }
 
-async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "REJECTED", reason?: string) {
+async function notifyVisitorOfDecision(
+  visitId: string,
+  decision: "ACCEPTED" | "REJECTED",
+  reason?: string,
+  roomName?: string
+) {
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
     include: { visitor: true, hostEmployee: true },
@@ -233,7 +239,8 @@ async function notifyVisitorOfDecision(visitId: string, decision: "ACCEPTED" | "
       visit.hostEmployee.name,
       decision,
       visit.accessToken,
-      reason
+      reason,
+      roomName
     );
   } catch (error) {
     console.error(`Failed to send visitor decision notification for visit ${visitId}:`, error);
@@ -266,7 +273,12 @@ async function notifyAdminsOfPendingApproval(visitId: string) {
 }
 
 // Admin son kararını verince host çalışana "onaylandı/reddedildi" maili gider.
-async function notifyHostOfFinalDecision(visitId: string, decision: "ACCEPTED" | "REJECTED", reason?: string) {
+async function notifyHostOfFinalDecision(
+  visitId: string,
+  decision: "ACCEPTED" | "REJECTED",
+  reason?: string,
+  roomName?: string
+) {
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
     include: { visitor: true, hostEmployee: true },
@@ -274,7 +286,14 @@ async function notifyHostOfFinalDecision(visitId: string, decision: "ACCEPTED" |
   if (!visit) return;
 
   try {
-    await sendHostFinalDecisionNotification(visit.hostEmployee.email, visit.hostEmployee.name, visit.visitor.name, decision, reason);
+    await sendHostFinalDecisionNotification(
+      visit.hostEmployee.email,
+      visit.hostEmployee.name,
+      visit.visitor.name,
+      decision,
+      reason,
+      roomName
+    );
   } catch (error) {
     console.error(`Failed to send host final-decision notification for visit ${visitId}:`, error);
   }
@@ -304,14 +323,43 @@ export async function rejectVisitCore(visitId: string) {
 }
 
 // İkinci ve son onay: departman admin'i onaylayınca ziyaretçiye "onaylandı"
-// maili, host çalışana da "onaylandı" bilgi maili gider.
-export async function approveVisitByAdminCore(visitId: string) {
+// maili, host çalışana da "onaylandı" bilgi maili gider. Admin isteğe bağlı
+// olarak bu adımda bir toplantı odası da atayabilir — atarsa, ziyaretin
+// saatleri için doğrudan (onaysız, APPROVED) bir RoomBooking oluşturulur ve
+// oda o saatte zaten doluysa (roomAssignment.roomId) onay hiç işlenmez,
+// admin'e hata döner. Oda bilgisi hem ziyaretçiye hem host'a giden mailde de yer alır.
+export async function approveVisitByAdminCore(visitId: string, roomAssignment?: { roomId: string; adminId: string }) {
+  let roomName: string | undefined;
+
+  if (roomAssignment) {
+    const visit = await prisma.visit.findUniqueOrThrow({
+      where: { id: visitId },
+      include: { visitor: true, hostEmployee: true },
+    });
+    const room = await prisma.meetingRoom.findUnique({ where: { id: roomAssignment.roomId } });
+    if (!room) {
+      throw new Error("Seçilen oda bulunamadı.");
+    }
+
+    const bookingResult = await createDirectRoomBookingCore(roomAssignment.adminId, {
+      roomId: room.id,
+      purpose: `Ziyaret: ${visit.visitor.name} → ${visit.hostEmployee.name}`,
+      startTime: visit.scheduledAt.toISOString(),
+      endTime: visit.scheduledEndAt.toISOString(),
+      visitId,
+    });
+    if (bookingResult.error) {
+      throw new Error(bookingResult.error);
+    }
+    roomName = room.name;
+  }
+
   await prisma.visit.update({
     where: { id: visitId, status: "PENDING_ADMIN_APPROVAL" },
     data: { status: "ACCEPTED" },
   });
-  await notifyVisitorOfDecision(visitId, "ACCEPTED");
-  await notifyHostOfFinalDecision(visitId, "ACCEPTED");
+  await notifyVisitorOfDecision(visitId, "ACCEPTED", undefined, roomName);
+  await notifyHostOfFinalDecision(visitId, "ACCEPTED", undefined, roomName);
 }
 
 // Admin son aşamada reddederse bir gerekçe yazmak zorunda — bu gerekçe hem
@@ -382,18 +430,23 @@ export async function rejectVisit(visitId: string) {
   revalidatePath("/staff/visits");
 }
 
-export async function approveVisitByAdmin(visitId: string) {
+export async function approveVisitByAdmin(visitId: string, formData: FormData) {
   const visit = await prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
   await requireDepartmentAdminOrSuperAdmin(visit.hostEmployeeId);
 
+  const session = await auth();
+  const roomId = (formData.get("roomId") as string)?.trim() || undefined;
+  const roomAssignment = roomId ? { roomId, adminId: session!.user!.id! } : undefined;
+
   try {
-    await approveVisitByAdminCore(visitId);
+    await approveVisitByAdminCore(visitId, roomAssignment);
   } catch (error) {
     if (!isRecordNotFoundError(error)) throw error;
   }
 
   revalidatePath("/staff/dashboard");
   revalidatePath("/staff/visits");
+  revalidatePath("/staff/rooms");
 }
 
 export async function rejectVisitByAdmin(visitId: string, formData: FormData) {

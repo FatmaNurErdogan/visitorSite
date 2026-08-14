@@ -9,7 +9,8 @@ export async function sendVisitorDecisionNotification(
   hostName: string,
   decision: "ACCEPTED" | "REJECTED",
   accessToken: string,
-  reason?: string
+  reason?: string,
+  roomName?: string
 ) {
   const isApproved = decision === "ACCEPTED";
   const visitUrl = `${process.env.APP_BASE_URL}/visit/${accessToken}`;
@@ -22,6 +23,7 @@ export async function sendVisitorDecisionNotification(
       ? `
         <p>Merhaba ${escapeHtml(visitorName)},</p>
         <p>${escapeHtml(hostName)} adlı çalışanı ziyaret etme talebiniz <strong>onaylandı</strong>.</p>
+        ${roomName ? `<p>Görüşme odası: <strong>${escapeHtml(roomName)}</strong></p>` : ""}
         <p>Görüşmek üzere! Gelmeden önce <a href="${visitUrl}">${escapeHtml(hostName)} ile doğrudan mesajlaşabilirsiniz</a>.</p>
       `
       : `

@@ -204,6 +204,10 @@ export type BookRoomInput = {
   purpose: string;
   startTime: string;
   endTime: string;
+  // Set when this direct booking is made as part of a visit's final
+  // approval (bkz. approveVisitByAdminCore) so the booking is linked back
+  // to the visit it's for, instead of being a standalone internal meeting.
+  visitId?: string;
 };
 
 // ADMIN'in bir odayı, herhangi bir ziyaretten bağımsız olarak, gelecekteki
@@ -248,6 +252,7 @@ export async function createDirectRoomBookingCore(adminId: string, input: BookRo
         endTime,
         status: "APPROVED",
         respondedAt: new Date(),
+        visitId: input.visitId,
       },
     });
     return false;

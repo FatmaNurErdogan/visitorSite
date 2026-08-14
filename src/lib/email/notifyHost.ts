@@ -54,7 +54,8 @@ export async function sendHostFinalDecisionNotification(
   hostName: string,
   visitorName: string,
   decision: "ACCEPTED" | "REJECTED",
-  reason?: string
+  reason?: string,
+  roomName?: string
 ) {
   const isApproved = decision === "ACCEPTED";
 
@@ -66,6 +67,7 @@ export async function sendHostFinalDecisionNotification(
       ? `
         <p>Merhaba ${escapeHtml(hostName)},</p>
         <p>Onayladığınız ${escapeHtml(visitorName)} ziyaret talebi, departman yöneticisi tarafından da <strong>son olarak onaylandı</strong>. Ziyaretçiye bilgi verildi.</p>
+        ${roomName ? `<p>Görüşme odası: <strong>${escapeHtml(roomName)}</strong></p>` : ""}
       `
       : `
         <p>Merhaba ${escapeHtml(hostName)},</p>

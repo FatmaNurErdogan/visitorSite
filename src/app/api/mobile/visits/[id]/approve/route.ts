@@ -43,13 +43,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           { status: 403 }
         );
       }
-      await approveVisitByAdminCore(id);
+      // roomId opsiyonel — admin son onayla birlikte bir toplantı odası da
+      // atayabilir (bkz. approveVisitByAdminCore), web'deki dashboard
+      // formunun mobil karşılığı.
+      const body = await req.json().catch(() => null);
+      const roomId = (body?.roomId as string | undefined)?.trim() || undefined;
+      await approveVisitByAdminCore(id, roomId ? { roomId, adminId: user.sub } : undefined);
     } else {
       return NextResponse.json({ error: "Bu ziyaret talebi zaten işlendi." }, { status: 409 });
     }
   } catch (error) {
     if (isRecordNotFoundError(error)) {
       return NextResponse.json({ error: "Bu ziyaret talebi zaten işlendi." }, { status: 409 });
+    }
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
     throw error;
   }
