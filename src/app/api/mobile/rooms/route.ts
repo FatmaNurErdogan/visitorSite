@@ -9,7 +9,7 @@ import { createMeetingRoomCore } from "@/actions/rooms";
 export async function GET(req: Request) {
   const user = await getMobileUser(req);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Yetkiniz yok" }, { status: 401 });
   }
 
   const rooms = await prisma.meetingRoom.findMany({
@@ -42,12 +42,12 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const user = await getMobileUser(req);
   if (!user || user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: user ? 403 : 401 });
+    return NextResponse.json({ error: "Yetkiniz yok" }, { status: user ? 403 : 401 });
   }
 
   const body = await req.json().catch(() => null);
   if (!body) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    return NextResponse.json({ error: "Geçersiz istek gövdesi." }, { status: 400 });
   }
 
   const result = await createMeetingRoomCore({

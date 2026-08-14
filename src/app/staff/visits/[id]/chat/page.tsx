@@ -21,8 +21,8 @@ export default async function StaffVisitChatPage({ params }: { params: Promise<{
   if (!visit) {
     return (
       <main className="page-container">
-        <h1>Visit not found</h1>
-        <Link href="/staff/visits">Back to visits</Link>
+        <h1>Ziyaret bulunamadı</h1>
+        <Link href="/staff/visits">Ziyaretlere dön</Link>
       </main>
     );
   }
@@ -33,27 +33,27 @@ export default async function StaffVisitChatPage({ params }: { params: Promise<{
   if (role !== "ADMIN" && userId !== visit.hostEmployeeId) {
     return (
       <main className="page-container">
-        <h1>Not authorized</h1>
-        <p>Only the host or an admin can open this chat.</p>
-        <Link href="/staff/visits">Back to visits</Link>
+        <h1>Yetkiniz yok</h1>
+        <p>Bu sohbeti yalnızca host veya bir yönetici açabilir.</p>
+        <Link href="/staff/visits">Ziyaretlere dön</Link>
       </main>
     );
   }
 
   return (
     <main className="page-container">
-      <h1>Chat with {visit.visitor.name}</h1>
+      <h1>{visit.visitor.name} ile sohbet</h1>
       <p>
-        <Link href="/staff/visits">Back to visits</Link>
+        <Link href="/staff/visits">Ziyaretlere dön</Link>
       </p>
       <p>
-        Visiting {visit.hostEmployee.name} &mdash; <StatusBadge status={visit.status} />
+        {visit.hostEmployee.name} adlı çalışanı ziyaret ediyor &mdash; <StatusBadge status={visit.status} />
       </p>
 
       {isChatOpen(visit.status) ? (
         <ChatBox apiUrl={`/api/staff/visits/${id}/messages`} viewerType="STAFF" />
       ) : (
-        <p>Chat isn&apos;t available for this visit.</p>
+        <p>Bu ziyaret için sohbet kullanılamıyor.</p>
       )}
     </main>
   );

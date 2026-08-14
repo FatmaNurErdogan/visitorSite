@@ -7,7 +7,7 @@ import { getMobileUser } from "@/lib/mobileAuth";
 export async function GET(req: Request) {
   const user = await getMobileUser(req);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Yetkiniz yok" }, { status: 401 });
   }
 
   const { role, sub: userId } = user;

@@ -13,27 +13,27 @@ export default async function VisitorVisitPage({ params }: { params: Promise<{ t
   if (!visit) {
     return (
       <main className="page-container">
-        <h1>Visit not found</h1>
-        <p>This link isn&apos;t valid. Double check the link from your email.</p>
+        <h1>Ziyaret bulunamadı</h1>
+        <p>Bu bağlantı geçerli değil. E-postanızdaki bağlantıyı tekrar kontrol edin.</p>
       </main>
     );
   }
 
   return (
     <main className="page-container">
-      <h1>Your visit</h1>
+      <h1>Ziyaretiniz</h1>
       <p>
-        Visiting <strong>{visit.hostEmployee.name}</strong> &mdash; <StatusBadge status={visit.status} />
+        <strong>{visit.hostEmployee.name}</strong> adlı çalışanı ziyaret ediyorsunuz &mdash; <StatusBadge status={visit.status} />
       </p>
-      <p>Scheduled for {visit.scheduledAt.toLocaleString()}</p>
+      <p>{visit.scheduledAt.toLocaleString()} tarihine planlandı</p>
 
       {isChatOpenForVisitor(visit) ? (
         <section>
-          <h2>Chat with {visit.hostEmployee.name}</h2>
+          <h2>{visit.hostEmployee.name} ile sohbet</h2>
           <ChatBox apiUrl={`/api/visits/${token}/messages`} viewerType="VISITOR" />
         </section>
       ) : (
-        <p>Chat isn&apos;t available for this visit.</p>
+        <p>Bu ziyaret için sohbet kullanılamıyor.</p>
       )}
     </main>
   );

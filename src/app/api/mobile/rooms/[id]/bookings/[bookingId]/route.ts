@@ -8,7 +8,7 @@ import { cancelDirectRoomBookingCore } from "@/actions/rooms";
 export async function DELETE(req: Request, { params }: { params: Promise<{ bookingId: string }> }) {
   const user = await getMobileUser(req);
   if (!user || user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: user ? 403 : 401 });
+    return NextResponse.json({ error: "Yetkiniz yok" }, { status: user ? 403 : 401 });
   }
 
   const { bookingId } = await params;

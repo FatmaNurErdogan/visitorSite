@@ -3,7 +3,7 @@ BEGIN TRY
 BEGIN TRAN;
 
 -- CreateIndex
-CREATE INDEX [vms_room_booking_roomId_status_startTime_endTime_idx] ON [dbo].[vms_room_booking]([roomId], [status], [startTime], [endTime]);
+CREATE INDEX [vms_room_booking_roomId_status_startTime_endTime_idx] ON [vms_room_booking]([roomId], [status], [startTime], [endTime]);
 
 COMMIT TRAN;
 

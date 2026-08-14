@@ -22,7 +22,7 @@ export type CreateStaffAccountInput = {
 async function requireAdmin() {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") {
-    throw new Error("Not authorized to manage staff accounts.");
+    throw new Error("Personel hesaplarını yönetme yetkiniz yok.");
   }
 }
 
@@ -36,20 +36,20 @@ export async function createStaffAccountCore(input: CreateStaffAccountInput): Pr
   const role = input.role;
 
   if (!name || !email || !password || !role) {
-    return { error: "Please fill in all fields." };
+    return { error: "Lütfen tüm alanları doldurun." };
   }
 
   if (password.length < 6) {
-    return { error: "Password must be at least 6 characters." };
+    return { error: "Şifre en az 6 karakter olmalı." };
   }
 
   if (!["ADMIN", "EMPLOYEE", "RECEPTIONIST"].includes(role)) {
-    return { error: "Please pick a valid role." };
+    return { error: "Lütfen geçerli bir rol seçin." };
   }
 
   const existing = await prisma.staff.findUnique({ where: { email } });
   if (existing) {
-    return { error: "An account with this email already exists." };
+    return { error: "Bu e-posta ile bir hesap zaten var." };
   }
 
   const department = input.department?.trim() || undefined;

@@ -24,11 +24,11 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
       <div className="card">
         {state.scheduleConflict ? (
           <p>
-            Sorry, your host already has another visit scheduled around that time. We&apos;ve emailed you — please
-            submit a new request for a different time.
+            Üzgünüz, host&apos;unuzun o saatlerde zaten başka bir ziyareti planlanmış. Size e-posta gönderdik —
+            lütfen farklı bir saat için yeni bir talep gönderin.
           </p>
         ) : (
-          <p>Thanks! Your visit request has been submitted and is waiting for approval.</p>
+          <p>Teşekkürler! Ziyaret talebiniz gönderildi ve onay bekliyor.</p>
         )}
       </div>
     );
@@ -38,29 +38,29 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
     <form action={formAction}>
       <div className="form-group">
         <label className="form-label" htmlFor="name">
-          Your name
+          Adınız
         </label>
         <input className="form-input" id="name" name="name" type="text" required />
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="phone">
-          Phone
+          Telefon
         </label>
         <input className="form-input" id="phone" name="phone" type="tel" required />
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="email">
-          Email
+          E-posta
         </label>
         <input className="form-input" id="email" name="email" type="email" required />
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="hostEmployeeId">
-          Who are you visiting?
+          Kimi ziyaret ediyorsunuz?
         </label>
         <select className="form-input" id="hostEmployeeId" name="hostEmployeeId" required defaultValue="">
           <option value="" disabled>
-            Select a host
+            Bir host seçin
           </option>
           {hosts.map((host) => (
             <option key={host.id} value={host.id}>
@@ -72,13 +72,13 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="visitReason">
-          Reason for visit
+          Ziyaret sebebi
         </label>
         <input className="form-input" id="visitReason" name="visitReason" type="text" required />
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="scheduledAt">
-          Date and time (9:00–18:00 only)
+          Tarih ve saat (yalnızca 9:00–18:00 arası)
         </label>
         <input
           className="form-input"
@@ -91,7 +91,7 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
       </div>
       {state?.error && <p className="form-error">{state.error}</p>}
       <button className="btn btn-primary" type="submit" disabled={isPending}>
-        {isPending ? "Submitting..." : "Submit request"}
+        {isPending ? "Gönderiliyor..." : "Talebi gönder"}
       </button>
     </form>
   );

@@ -3,7 +3,7 @@ BEGIN TRY
 BEGIN TRAN;
 
 -- CreateTable
-CREATE TABLE [dbo].[vms_message] (
+CREATE TABLE [tys].[vms_message] (
     [id] NVARCHAR(1000) NOT NULL,
     [visitId] NVARCHAR(1000) NOT NULL,
     [senderType] NVARCHAR(1000) NOT NULL,
@@ -14,10 +14,10 @@ CREATE TABLE [dbo].[vms_message] (
 );
 
 -- AddForeignKey
-ALTER TABLE [dbo].[vms_message] ADD CONSTRAINT [vms_message_visitId_fkey] FOREIGN KEY ([visitId]) REFERENCES [dbo].[vms_visit]([id]) ON DELETE NO ACTION ON UPDATE CASCADE;
+ALTER TABLE [tys].[vms_message] ADD CONSTRAINT [vms_message_visitId_fkey] FOREIGN KEY ([visitId]) REFERENCES [tys].[vms_visit]([id]) ON DELETE NO ACTION ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE [dbo].[vms_message] ADD CONSTRAINT [vms_message_senderStaffId_fkey] FOREIGN KEY ([senderStaffId]) REFERENCES [dbo].[vms_staff]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE [tys].[vms_message] ADD CONSTRAINT [vms_message_senderStaffId_fkey] FOREIGN KEY ([senderStaffId]) REFERENCES [tys].[vms_staff]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 COMMIT TRAN;
 

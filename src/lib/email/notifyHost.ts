@@ -11,11 +11,11 @@ export async function sendHostRequestNotification(
   await getResend().emails.send({
     from: process.env.RESEND_FROM_EMAIL as string,
     to: hostEmail,
-    subject: `New visit request from ${visitorName}`,
+    subject: `${visitorName} tarafından yeni bir ziyaret talebi`,
     html: `
-      <p>${visitorName} has requested to visit you on ${scheduledAt.toLocaleString()}.</p>
-      <p>Reason: ${visitReason}</p>
-      <p>Log in to <a href="${dashboardUrl}">your dashboard</a> to approve or reject this request.</p>
+      <p>${visitorName}, sizi ${scheduledAt.toLocaleString()} tarihinde ziyaret etmek istiyor.</p>
+      <p>Sebep: ${visitReason}</p>
+      <p>Bu talebi onaylamak veya reddetmek için <a href="${dashboardUrl}">panelinize</a> giriş yapın.</p>
     `,
   });
 }
@@ -26,9 +26,9 @@ export async function sendVisitorArrivedNotification(hostEmail: string, visitorN
   await getResend().emails.send({
     from: process.env.RESEND_FROM_EMAIL as string,
     to: hostEmail,
-    subject: `${visitorName} has arrived`,
+    subject: `${visitorName} geldi`,
     html: `
-      <p>${visitorName} has checked in at reception and is on their way to you.</p>
+      <p>${visitorName} resepsiyonda giriş yaptı ve size doğru geliyor.</p>
     `,
   });
 }
@@ -39,9 +39,9 @@ export async function sendVisitorDepartedNotification(hostEmail: string, visitor
   await getResend().emails.send({
     from: process.env.RESEND_FROM_EMAIL as string,
     to: hostEmail,
-    subject: `${visitorName} has left`,
+    subject: `${visitorName} ayrıldı`,
     html: `
-      <p>${visitorName} has checked out at reception and left the building.</p>
+      <p>${visitorName} resepsiyonda çıkış yaptı ve binadan ayrıldı.</p>
     `,
   });
 }
@@ -60,16 +60,16 @@ export async function sendHostFinalDecisionNotification(
   await getResend().emails.send({
     from: process.env.RESEND_FROM_EMAIL as string,
     to: hostEmail,
-    subject: isApproved ? `${visitorName}'s visit was approved` : `${visitorName}'s visit was rejected`,
+    subject: isApproved ? `${visitorName} adlı ziyaretçinin ziyareti onaylandı` : `${visitorName} adlı ziyaretçinin ziyareti reddedildi`,
     html: isApproved
       ? `
-        <p>Hi ${hostName},</p>
-        <p>The visit request from ${visitorName} that you approved has now been <strong>finally approved</strong> by the department admin. The visitor has been notified.</p>
+        <p>Merhaba ${hostName},</p>
+        <p>Onayladığınız ${visitorName} ziyaret talebi, departman yöneticisi tarafından da <strong>son olarak onaylandı</strong>. Ziyaretçiye bilgi verildi.</p>
       `
       : `
-        <p>Hi ${hostName},</p>
-        <p>The visit request from ${visitorName} that you approved was <strong>rejected</strong> by the department admin.</p>
-        ${reason ? `<p>Reason: ${reason}</p>` : ""}
+        <p>Merhaba ${hostName},</p>
+        <p>Onayladığınız ${visitorName} ziyaret talebi, departman yöneticisi tarafından <strong>reddedildi</strong>.</p>
+        ${reason ? `<p>Sebep: ${reason}</p>` : ""}
       `,
   });
 }

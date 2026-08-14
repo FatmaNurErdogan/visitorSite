@@ -62,25 +62,25 @@ export async function createVisitRequestCore(input: CreateVisitRequestInput): Pr
   const scheduledAtRaw = input.scheduledAt;
 
   if (!name || !phone || !email || !hostEmployeeId || !visitReason || !scheduledAtRaw) {
-    return { error: "Please fill in all required fields." };
+    return { error: "Lütfen tüm zorunlu alanları doldurun." };
   }
 
   const scheduledAt = new Date(scheduledAtRaw);
   if (Number.isNaN(scheduledAt.getTime())) {
-    return { error: "Please provide a valid date and time." };
+    return { error: "Lütfen geçerli bir tarih ve saat girin." };
   }
   if (scheduledAt.getTime() < Date.now()) {
-    return { error: "Please pick a date and time in the future." };
+    return { error: "Lütfen gelecekte bir tarih ve saat seçin." };
   }
   // Randevular sadece mesai saatleri içinde alınabilir.
   const hour = scheduledAt.getHours();
   if (hour < 9 || hour >= 18) {
-    return { error: "Please pick a time between 9:00 and 18:00." };
+    return { error: "Lütfen 9:00 ile 18:00 arasında bir saat seçin." };
   }
 
   const host = await prisma.staff.findUnique({ where: { id: hostEmployeeId } });
   if (!host) {
-    return { error: "Please select who you're visiting." };
+    return { error: "Lütfen kimi ziyaret ettiğinizi seçin." };
   }
 
   const visitor = await prisma.visitor.create({
@@ -104,7 +104,7 @@ export async function createVisitRequestCore(input: CreateVisitRequestInput): Pr
         ? {
             status: "REJECTED",
             respondedAt: new Date(),
-            adminRejectionReason: `${host.name} already has another visit scheduled around this time.`,
+            adminRejectionReason: `${host.name} adlı çalışanın o saatlerde zaten başka bir ziyareti planlanmış.`,
           }
         : {}),
     },
@@ -156,7 +156,7 @@ async function requireHostOrAdmin(hostEmployeeId: string) {
   const role = session?.user?.role;
   const userId = session?.user?.id;
   if (!session || (role !== "ADMIN" && userId !== hostEmployeeId)) {
-    throw new Error("Not authorized to respond to this visit request.");
+    throw new Error("Bu ziyaret talebine yanıt verme yetkiniz yok.");
   }
 }
 
@@ -165,7 +165,7 @@ async function requireHostOrAdmin(hostEmployeeId: string) {
 async function requireReceptionist() {
   const session = await auth();
   if (session?.user?.role !== "RECEPTIONIST") {
-    throw new Error("Only reception can check visitors in or out.");
+    throw new Error("Ziyaretçi giriş/çıkışını yalnızca resepsiyon onaylayabilir.");
   }
 }
 
@@ -176,12 +176,12 @@ async function requireDepartmentAdminOrSuperAdmin(hostEmployeeId: string) {
   const role = session?.user?.role;
   const userId = session?.user?.id;
   if (!session || role !== "ADMIN" || !userId) {
-    throw new Error("Not authorized to give final approval for this visit request.");
+    throw new Error("Bu ziyaret talebine son onayı verme yetkiniz yok.");
   }
 
   const admin = await prisma.staff.findUnique({ where: { id: userId } });
   if (!admin) {
-    throw new Error("Not authorized to give final approval for this visit request.");
+    throw new Error("Bu ziyaret talebine son onayı verme yetkiniz yok.");
   }
   if (admin.department === null) {
     return; // genel admin, departmanı olmadığı için her isteği onaylayabilir
@@ -189,7 +189,7 @@ async function requireDepartmentAdminOrSuperAdmin(hostEmployeeId: string) {
 
   const host = await prisma.staff.findUnique({ where: { id: hostEmployeeId } });
   if (!host || host.department !== admin.department) {
-    throw new Error("Not authorized to give final approval for this department's visit requests.");
+    throw new Error("Bu departmanın ziyaret taleplerine son onayı verme yetkiniz yok.");
   }
 }
 
@@ -390,7 +390,7 @@ export async function rejectVisitByAdmin(visitId: string, formData: FormData) {
 
   const reason = (formData.get("reason") as string)?.trim();
   if (!reason) {
-    throw new Error("Please explain why you're rejecting this request.");
+    throw new Error("Lütfen bu talebi neden reddettiğinizi açıklayın.");
   }
 
   try {

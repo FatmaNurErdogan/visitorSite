@@ -4,36 +4,49 @@
 // param, so an employee account can't log in through the receptionist
 // door and vice versa (enforced in src/lib/verifyStaffCredentials.ts).
 import Link from "next/link";
+import { UserRound, Briefcase, ClipboardCheck } from "lucide-react";
+import { AuthShell } from "@/components/AuthShell";
 
 export default function Home() {
   return (
-    <main className="page-container">
-      <h1>Visitor Management System</h1>
-      <p>Please select who you are:</p>
+    <AuthShell>
+      <h1>Hoş geldiniz</h1>
+      <p>Lütfen kim olduğunuzu seçin:</p>
 
-      <div className="card">
-        <h2>Visitor</h2>
-        <p>Request a visit to see one of our employees.</p>
-        <Link className="btn btn-primary" href="/visitor">
-          I&apos;m a Visitor
-        </Link>
-      </div>
+      <div className="role-grid">
+        <div className="card role-card">
+          <div className="role-card-icon">
+            <UserRound size={22} strokeWidth={2} />
+          </div>
+          <h2>Ziyaretçi</h2>
+          <p>Çalışanlarımızdan birini ziyaret etmek için talep oluşturun.</p>
+          <Link className="btn btn-primary" href="/visitor">
+            Ziyaretçiyim
+          </Link>
+        </div>
 
-      <div className="card">
-        <h2>Employee</h2>
-        <p>Log in to approve or reject visit requests.</p>
-        <Link className="btn btn-primary" href="/login?as=employee">
-          I&apos;m an Employee
-        </Link>
-      </div>
+        <div className="card role-card">
+          <div className="role-card-icon">
+            <Briefcase size={22} strokeWidth={2} />
+          </div>
+          <h2>Çalışan</h2>
+          <p>Ziyaret taleplerini onaylamak veya reddetmek için giriş yapın.</p>
+          <Link className="btn btn-primary" href="/login?as=employee">
+            Çalışanım
+          </Link>
+        </div>
 
-      <div className="card">
-        <h2>Receptionist</h2>
-        <p>Log in to check visitors in and out.</p>
-        <Link className="btn btn-primary" href="/login?as=receptionist">
-          I&apos;m a Receptionist
-        </Link>
+        <div className="card role-card">
+          <div className="role-card-icon">
+            <ClipboardCheck size={22} strokeWidth={2} />
+          </div>
+          <h2>Resepsiyonist</h2>
+          <p>Ziyaretçi giriş/çıkışlarını onaylamak için giriş yapın.</p>
+          <Link className="btn btn-primary" href="/login?as=receptionist">
+            Resepsiyonistim
+          </Link>
+        </div>
       </div>
-    </main>
+    </AuthShell>
   );
 }

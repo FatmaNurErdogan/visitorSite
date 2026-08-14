@@ -16,18 +16,18 @@ export async function sendVisitorDecisionNotification(
   await getResend().emails.send({
     from: process.env.RESEND_FROM_EMAIL as string,
     to: visitorEmail,
-    subject: isApproved ? "Your visit request was approved" : "Your visit request was declined",
+    subject: isApproved ? "Ziyaret talebiniz onaylandı" : "Ziyaret talebiniz reddedildi",
     html: isApproved
       ? `
-        <p>Hi ${visitorName},</p>
-        <p>Your request to visit ${hostName} has been <strong>approved</strong>.</p>
-        <p>See you soon! You can also <a href="${visitUrl}">message ${hostName} directly</a> before you arrive.</p>
+        <p>Merhaba ${visitorName},</p>
+        <p>${hostName} adlı çalışanı ziyaret etme talebiniz <strong>onaylandı</strong>.</p>
+        <p>Görüşmek üzere! Gelmeden önce <a href="${visitUrl}">${hostName} ile doğrudan mesajlaşabilirsiniz</a>.</p>
       `
       : `
-        <p>Hi ${visitorName},</p>
-        <p>Your request to visit ${hostName} has been <strong>declined</strong>.</p>
-        ${reason ? `<p>Reason: ${reason}</p>` : ""}
-        <p>Feel free to submit a new request for a different time.</p>
+        <p>Merhaba ${visitorName},</p>
+        <p>${hostName} adlı çalışanı ziyaret etme talebiniz <strong>reddedildi</strong>.</p>
+        ${reason ? `<p>Sebep: ${reason}</p>` : ""}
+        <p>Farklı bir saat için yeni bir talep gönderebilirsiniz.</p>
       `,
   });
 }
@@ -45,11 +45,11 @@ export async function sendVisitorScheduleConflictNotification(
   await getResend().emails.send({
     from: process.env.RESEND_FROM_EMAIL as string,
     to: visitorEmail,
-    subject: "Your visit request couldn't be scheduled",
+    subject: "Ziyaret talebiniz planlanamadı",
     html: `
-      <p>Hi ${visitorName},</p>
-      <p>${hostName} already has another visit scheduled around ${scheduledAt.toLocaleString()}, so we couldn't accept your request for that time.</p>
-      <p>Please submit a new request for a different time.</p>
+      <p>Merhaba ${visitorName},</p>
+      <p>${hostName} adlı çalışanın ${scheduledAt.toLocaleString()} civarında zaten başka bir ziyareti planlanmış olduğu için o saat için talebinizi kabul edemedik.</p>
+      <p>Lütfen farklı bir saat için yeni bir talep gönderin.</p>
     `,
   });
 }

@@ -11,8 +11,8 @@ export default async function NewVisitPage() {
 
   return (
     <main className="page-container">
-      <h1>Log a walk-in visit</h1>
-      <p>Use this to register a visitor who&apos;s arrived without a prior request.</p>
+      <h1>Kapıdan gelen ziyaretçi ekle</h1>
+      <p>Önceden talep göndermeden gelen bir ziyaretçiyi kaydetmek için bunu kullanın.</p>
       <VisitRequestForm hosts={hosts} />
     </main>
   );

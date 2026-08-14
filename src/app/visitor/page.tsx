@@ -13,8 +13,8 @@ export default async function VisitorPage() {
 
   return (
     <main className="page-container">
-      <h1>Request a visit</h1>
-      <p>Let us know who you&apos;re visiting and when, and we&apos;ll pass it along for approval.</p>
+      <h1>Ziyaret talep et</h1>
+      <p>Kimi ve ne zaman ziyaret edeceğinizi bize bildirin, onay için iletelim.</p>
       <VisitRequestForm hosts={hosts} />
     </main>
   );

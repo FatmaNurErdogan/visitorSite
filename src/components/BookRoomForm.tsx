@@ -15,7 +15,7 @@ export function BookRoomForm({ roomId }: { roomId: string }) {
   if (state?.success) {
     return (
       <div className="card">
-        <p>Room booked.</p>
+        <p>Oda rezerve edildi.</p>
       </div>
     );
   }
@@ -24,13 +24,13 @@ export function BookRoomForm({ roomId }: { roomId: string }) {
     <form action={formAction}>
       <div className="form-group">
         <label className="form-label" htmlFor="purpose">
-          Purpose
+          Amaç
         </label>
         <input className="form-input" id="purpose" name="purpose" type="text" required />
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="startTime">
-          Starts at
+          Başlangıç
         </label>
         <input
           className="form-input"
@@ -43,7 +43,7 @@ export function BookRoomForm({ roomId }: { roomId: string }) {
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="endTime">
-          Ends at
+          Bitiş
         </label>
         <input
           className="form-input"
@@ -56,7 +56,7 @@ export function BookRoomForm({ roomId }: { roomId: string }) {
       </div>
       {state?.error && <p className="form-error">{state.error}</p>}
       <button className="btn btn-primary" type="submit" disabled={isPending}>
-        {isPending ? "Booking..." : "Book room"}
+        {isPending ? "Rezerve ediliyor..." : "Odayı rezerve et"}
       </button>
     </form>
   );

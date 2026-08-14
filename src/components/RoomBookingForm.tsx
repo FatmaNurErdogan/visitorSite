@@ -16,7 +16,7 @@ export function RoomBookingForm({ roomId }: { roomId: string }) {
   if (state?.success) {
     return (
       <div className="card">
-        <p>Booking request sent — waiting on admin approval.</p>
+        <p>Rezervasyon talebi gönderildi — yönetici onayı bekleniyor.</p>
       </div>
     );
   }
@@ -25,13 +25,13 @@ export function RoomBookingForm({ roomId }: { roomId: string }) {
     <form action={formAction} className="card">
       <div className="form-group">
         <label className="form-label" htmlFor="purpose">
-          Purpose
+          Amaç
         </label>
         <input className="form-input" id="purpose" name="purpose" type="text" required />
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="startTime">
-          Start
+          Başlangıç
         </label>
         <input
           className="form-input"
@@ -44,7 +44,7 @@ export function RoomBookingForm({ roomId }: { roomId: string }) {
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="endTime">
-          End
+          Bitiş
         </label>
         <input
           className="form-input"
@@ -57,7 +57,7 @@ export function RoomBookingForm({ roomId }: { roomId: string }) {
       </div>
       {state?.error && <p className="form-error">{state.error}</p>}
       <button className="btn btn-primary" type="submit" disabled={isPending}>
-        {isPending ? "Requesting..." : "Request booking"}
+        {isPending ? "Talep ediliyor..." : "Rezervasyon talep et"}
       </button>
     </form>
   );

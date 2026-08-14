@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 async function requireAdmin() {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") {
-    throw new Error("Not authorized to manage departments.");
+    throw new Error("Departmanları yönetme yetkiniz yok.");
   }
 }
 
@@ -24,12 +24,12 @@ export async function listDepartments() {
 export async function createDepartmentCore(name: string): Promise<DepartmentFormState> {
   const trimmed = name?.trim();
   if (!trimmed) {
-    return { error: "Please give the department a name." };
+    return { error: "Lütfen departmana bir ad verin." };
   }
 
   const existing = await prisma.department.findUnique({ where: { name: trimmed } });
   if (existing) {
-    return { error: "A department with this name already exists." };
+    return { error: "Bu adda bir departman zaten var." };
   }
 
   await prisma.department.create({ data: { name: trimmed } });

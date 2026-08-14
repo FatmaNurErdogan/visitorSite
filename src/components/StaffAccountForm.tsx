@@ -8,41 +8,41 @@ export function StaffAccountForm({ departments }: { departments: { id: string; n
 
   return (
     <form action={formAction} className="card">
-      <h2>Add a staff account</h2>
+      <h2>Personel hesabı ekle</h2>
       <div className="form-group">
         <label className="form-label" htmlFor="name">
-          Name
+          Ad
         </label>
         <input className="form-input" id="name" name="name" type="text" required />
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="email">
-          Email
+          E-posta
         </label>
         <input className="form-input" id="email" name="email" type="email" required />
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="password">
-          Password
+          Şifre
         </label>
         <input className="form-input" id="password" name="password" type="password" required minLength={6} />
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="role">
-          Role
+          Rol
         </label>
         <select className="form-input" id="role" name="role" required defaultValue="EMPLOYEE">
-          <option value="EMPLOYEE">Employee</option>
-          <option value="RECEPTIONIST">Receptionist</option>
-          <option value="ADMIN">Admin</option>
+          <option value="EMPLOYEE">Çalışan</option>
+          <option value="RECEPTIONIST">Resepsiyonist</option>
+          <option value="ADMIN">Yönetici</option>
         </select>
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="department">
-          Department
+          Departman
         </label>
         <select className="form-input" id="department" name="department" defaultValue="">
-          <option value="">No department</option>
+          <option value="">Departman yok</option>
           {departments.map((department) => (
             <option key={department.id} value={department.name}>
               {department.name}
@@ -51,9 +51,9 @@ export function StaffAccountForm({ departments }: { departments: { id: string; n
         </select>
       </div>
       {state?.error && <p className="form-error">{state.error}</p>}
-      {state?.success && <p>Account created.</p>}
+      {state?.success && <p>Hesap oluşturuldu.</p>}
       <button className="btn btn-primary" type="submit" disabled={isPending}>
-        {isPending ? "Creating..." : "Create account"}
+        {isPending ? "Oluşturuluyor..." : "Hesap oluştur"}
       </button>
     </form>
   );

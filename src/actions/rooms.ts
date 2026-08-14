@@ -10,7 +10,7 @@ import { approveVisitCore } from "@/actions/visits";
 async function requireAdmin() {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") {
-    throw new Error("Not authorized to manage meeting rooms.");
+    throw new Error("Toplantı odalarını yönetme yetkiniz yok.");
   }
   return session;
 }
@@ -73,15 +73,15 @@ export async function createMeetingRoomCore(input: CreateMeetingRoomInput): Prom
   const perks = normalizePerks(input.perks);
 
   if (!name) {
-    return { error: "Please give the room a name." };
+    return { error: "Lütfen odaya bir ad verin." };
   }
   if (capacity !== undefined && (!Number.isInteger(capacity) || capacity <= 0)) {
-    return { error: "Capacity must be a positive whole number." };
+    return { error: "Kapasite pozitif bir tam sayı olmalı." };
   }
 
   const existing = await prisma.meetingRoom.findUnique({ where: { name } });
   if (existing) {
-    return { error: "A room with this name already exists." };
+    return { error: "Bu adda bir oda zaten var." };
   }
 
   await prisma.meetingRoom.create({ data: { name, location, capacity, perks } });
@@ -129,24 +129,24 @@ export type CreateRoomBookingInput = {
 export async function createRoomBookingCore(input: CreateRoomBookingInput): Promise<RoomFormState> {
   const room = await prisma.meetingRoom.findUnique({ where: { id: input.roomId } });
   if (!room) {
-    return { error: "Room not found." };
+    return { error: "Oda bulunamadı." };
   }
 
   const purpose = input.purpose?.trim();
   if (!purpose) {
-    return { error: "Please describe the purpose of the meeting." };
+    return { error: "Lütfen toplantının amacını açıklayın." };
   }
 
   const startTime = new Date(input.startTime);
   const endTime = new Date(input.endTime);
   if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
-    return { error: "Please provide a valid date and time." };
+    return { error: "Lütfen geçerli bir tarih ve saat girin." };
   }
   if (startTime.getTime() < Date.now()) {
-    return { error: "Please pick a time in the future." };
+    return { error: "Lütfen gelecekte bir saat seçin." };
   }
   if (endTime.getTime() <= startTime.getTime()) {
-    return { error: "End time must be after the start time." };
+    return { error: "Bitiş saati başlangıç saatinden sonra olmalı." };
   }
 
   const hadConflict = await prisma.$transaction(
@@ -169,7 +169,7 @@ export async function createRoomBookingCore(input: CreateRoomBookingInput): Prom
   );
 
   if (hadConflict) {
-    return { error: "This room is already booked for that time — please pick a different time." };
+    return { error: "Bu oda o saatte zaten dolu — lütfen farklı bir saat seçin." };
   }
 
   return { success: true };
@@ -183,7 +183,7 @@ export async function createRoomBooking(
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
-    throw new Error("Not authorized to request a room booking.");
+    throw new Error("Oda rezervasyonu talep etme yetkiniz yok.");
   }
 
   const result = await createRoomBookingCore({
@@ -217,24 +217,24 @@ export type BookRoomInput = {
 export async function createDirectRoomBookingCore(adminId: string, input: BookRoomInput): Promise<RoomFormState> {
   const purpose = input.purpose?.trim();
   if (!purpose) {
-    return { error: "Please describe the purpose of this booking." };
+    return { error: "Lütfen bu rezervasyonun amacını açıklayın." };
   }
 
   const startTime = new Date(input.startTime);
   const endTime = new Date(input.endTime);
   if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
-    return { error: "Please provide valid start and end times." };
+    return { error: "Lütfen geçerli bir başlangıç ve bitiş saati girin." };
   }
   if (startTime.getTime() < Date.now()) {
-    return { error: "Please pick a start time in the future." };
+    return { error: "Lütfen gelecekte bir başlangıç saati seçin." };
   }
   if (endTime.getTime() <= startTime.getTime()) {
-    return { error: "End time must be after the start time." };
+    return { error: "Bitiş saati başlangıç saatinden sonra olmalı." };
   }
 
   const room = await prisma.meetingRoom.findUnique({ where: { id: input.roomId } });
   if (!room) {
-    return { error: "Please select a meeting room." };
+    return { error: "Lütfen bir toplantı odası seçin." };
   }
 
   const hadConflict = await prisma.$transaction(
@@ -260,7 +260,7 @@ export async function createDirectRoomBookingCore(adminId: string, input: BookRo
   );
 
   if (hadConflict) {
-    return { error: "This room is already booked for that time." };
+    return { error: "Bu oda o saatte zaten dolu." };
   }
 
   return { success: true };
@@ -275,13 +275,13 @@ export async function createDirectRoomBookingCore(adminId: string, input: BookRo
 export async function cancelDirectRoomBookingCore(bookingId: string): Promise<RoomFormState> {
   const booking = await prisma.roomBooking.findUnique({ where: { id: bookingId } });
   if (!booking) {
-    return { error: "Booking not found." };
+    return { error: "Rezervasyon bulunamadı." };
   }
   if (booking.visitId) {
-    return { error: "This booking is tied to a visit and can't be cancelled here." };
+    return { error: "Bu rezervasyon bir ziyarete bağlı ve buradan iptal edilemez." };
   }
   if (booking.status !== "APPROVED") {
-    return { error: "Only an active booking can be cancelled." };
+    return { error: "Yalnızca aktif bir rezervasyon iptal edilebilir." };
   }
 
   await prisma.roomBooking.update({
@@ -349,7 +349,7 @@ export async function approveRoomBooking(bookingId: string) {
 
   if ("skipped" in outcome) return;
   if ("conflict" in outcome) {
-    throw new Error("This room is already booked for that time — reject this ticket instead.");
+    throw new Error("Bu oda o saatte zaten dolu — bunun yerine bu talebi reddedin.");
   }
 
   try {

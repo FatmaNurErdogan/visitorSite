@@ -14,13 +14,13 @@ import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 // exist.
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
   if (!checkRateLimit(`visit-messages-get:${clientIp(req)}`, 60, 60_000)) {
-    return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
+    return NextResponse.json({ error: "Çok fazla istek. Lütfen yavaşlayın." }, { status: 429 });
   }
 
   const { token } = await params;
   const visit = await getVisitByAccessToken(token);
   if (!visit || !isChatOpenForVisitor(visit)) {
-    return NextResponse.json({ error: "Chat isn't available for this visit." }, { status: 404 });
+    return NextResponse.json({ error: "Bu ziyaret için sohbet kullanılamıyor." }, { status: 404 });
   }
 
   const messages = await listMessagesCore(visit.id);
@@ -30,12 +30,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   if (!checkRateLimit(`visit-messages-post:${token}`, 20, 60_000)) {
-    return NextResponse.json({ error: "Too many messages. Please slow down." }, { status: 429 });
+    return NextResponse.json({ error: "Çok fazla mesaj. Lütfen yavaşlayın." }, { status: 429 });
   }
 
   const visit = await getVisitByAccessToken(token);
   if (!visit || !isChatOpenForVisitor(visit)) {
-    return NextResponse.json({ error: "Chat isn't available for this visit." }, { status: 404 });
+    return NextResponse.json({ error: "Bu ziyaret için sohbet kullanılamıyor." }, { status: 404 });
   }
 
   const body = await req.json().catch(() => null);

@@ -3,7 +3,7 @@ BEGIN TRY
 BEGIN TRAN;
 
 -- CreateTable
-CREATE TABLE [dbo].[vms_department] (
+CREATE TABLE [vms_department] (
     [id] NVARCHAR(1000) NOT NULL,
     [name] NVARCHAR(1000) NOT NULL,
     [createdAt] DATETIME2 NOT NULL CONSTRAINT [vms_department_createdAt_df] DEFAULT CURRENT_TIMESTAMP,

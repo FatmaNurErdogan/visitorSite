@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Plus, CalendarPlus, Ban } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { cancelDirectRoomBooking, getRoomBookingsForMonth } from "@/actions/rooms";
@@ -7,7 +8,7 @@ import { formatMonthParam, parseMonthParam, shiftMonth } from "@/lib/month";
 
 export const dynamic = "force-dynamic";
 
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 // Google Calendar'daki gibi odaya göre renklendirme — hangi rengin hangi
 // odaya düştüğü bir ay içinde sabit kalsın diye roomId'lerin sıralı
@@ -56,28 +57,26 @@ export default async function MeetingRoomsPage({
 
   return (
     <main className="staff-visits-page page-container-wide">
-      <h1>Meeting rooms</h1>
-      <p>
-        <Link href="/staff/dashboard">Dashboard</Link>
+      <div className="page-header-row">
+        <h1>Toplantı odaları</h1>
         {isAdmin && (
-          <>
-            {" "}
-            &middot; <Link href="/staff/rooms/new">Add a room</Link>
-          </>
+          <Link href="/staff/rooms/new" className="btn btn-secondary">
+            <Plus size={15} strokeWidth={2} /> Oda ekle
+          </Link>
         )}
-      </p>
+      </div>
 
       <table className="table">
         <thead>
           <tr>
-            <th>Room</th>
-            <th>Location</th>
-            <th>Capacity</th>
-            <th>Perks</th>
-            <th>Status</th>
-            <th>Used by</th>
-            <th>Request</th>
-            {isAdmin && <th>Actions</th>}
+            <th>Oda</th>
+            <th>Konum</th>
+            <th>Kapasite</th>
+            <th>Özellikler</th>
+            <th>Durum</th>
+            <th>Kullanan</th>
+            <th>Talep</th>
+            {isAdmin && <th>İşlemler</th>}
           </tr>
         </thead>
         <tbody>
@@ -92,41 +91,45 @@ export default async function MeetingRoomsPage({
 
             const usedByLabel = (booking: (typeof room.bookings)[number]) =>
               booking.visit
-                ? `${booking.visit.visitor.name} (visiting ${booking.visit.hostEmployee.name})`
-                : `${booking.requestedBy.name} (internal meeting)`;
+                ? `${booking.visit.visitor.name} (${booking.visit.hostEmployee.name} adlı çalışanı ziyaret ediyor)`
+                : `${booking.requestedBy.name} (dahili toplantı)`;
 
             return (
               <tr key={room.id}>
-                <td data-label="Room">{room.name}</td>
-                <td data-label="Location">{room.location || "-"}</td>
-                <td data-label="Capacity">{room.capacity ?? "-"}</td>
-                <td data-label="Perks">{room.perks || "-"}</td>
-                <td data-label="Status">
+                <td data-label="Oda">{room.name}</td>
+                <td data-label="Konum">{room.location || "-"}</td>
+                <td data-label="Kapasite">{room.capacity ?? "-"}</td>
+                <td data-label="Özellikler">{room.perks || "-"}</td>
+                <td data-label="Durum">
                   {current ? (
-                    <span className="badge badge-checked_in">In use until {current.endTime.toLocaleTimeString()}</span>
+                    <span className="badge badge-checked_in">{current.endTime.toLocaleTimeString()} saatine kadar dolu</span>
                   ) : (
-                    <span className="badge badge-accepted">Available</span>
+                    <span className="badge badge-accepted">Müsait</span>
                   )}
                 </td>
-                <td data-label="Used by">
+                <td data-label="Kullanan">
                   {current
                     ? usedByLabel(current)
                     : next
-                      ? `Next: ${next.startTime.toLocaleString()} — ${usedByLabel(next)}`
+                      ? `Sıradaki: ${next.startTime.toLocaleString()} — ${usedByLabel(next)}`
                       : "-"}
                 </td>
-                <td data-label="Request">
-                  <Link href={`/staff/rooms/${room.id}/request`}>Request</Link>
+                <td data-label="Talep">
+                  <Link href={`/staff/rooms/${room.id}/request`} className="btn btn-secondary btn-sm">
+                    <CalendarPlus size={13} strokeWidth={2} /> Talep et
+                  </Link>
                 </td>
                 {isAdmin && (
-                  <td data-label="Actions">
-                    <Link href={`/staff/rooms/${room.id}/book`}>Book</Link>
+                  <td data-label="İşlemler">
+                    <Link href={`/staff/rooms/${room.id}/book`} className="btn btn-secondary btn-sm">
+                      <CalendarPlus size={13} strokeWidth={2} /> Rezerve et
+                    </Link>
                     {cancellable && (
                       <>
                         {" "}
                         <form action={cancelDirectRoomBooking.bind(null, cancellable.id)} style={{ display: "inline" }}>
-                          <SubmitButton className="btn btn-danger" pendingText="Cancelling...">
-                            Cancel
+                          <SubmitButton className="btn btn-danger btn-sm" pendingText="İptal ediliyor...">
+                            <Ban size={13} strokeWidth={2} /> İptal et
                           </SubmitButton>
                         </form>
                       </>
@@ -176,7 +179,7 @@ async function CalendarSection({
   const monthParamValue = formatMonthParam(year, month);
   const { year: prevYear, month: prevMonth } = shiftMonth(year, month, -1);
   const { year: nextYear, month: nextMonth } = shiftMonth(year, month, 1);
-  const monthLabel = monthStart.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const monthLabel = monthStart.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
 
   const selectedDay = dayParam && bookingsByDay.has(dayParam) ? dayParam : undefined;
   const selectedBookings = selectedDay ? bookingsByDay.get(selectedDay)! : [];
@@ -188,9 +191,9 @@ async function CalendarSection({
   return (
     <section className="calendar-section">
       <div className="calendar-nav">
-        <Link href={`/staff/rooms?month=${formatMonthParam(prevYear, prevMonth)}`}>&larr; Prev</Link>
+        <Link href={`/staff/rooms?month=${formatMonthParam(prevYear, prevMonth)}`}>&larr; Önceki</Link>
         <h2>{monthLabel}</h2>
-        <Link href={`/staff/rooms?month=${formatMonthParam(nextYear, nextMonth)}`}>Next &rarr;</Link>
+        <Link href={`/staff/rooms?month=${formatMonthParam(nextYear, nextMonth)}`}>Sonraki &rarr;</Link>
       </div>
 
       <div className="calendar-grid">
@@ -227,7 +230,7 @@ async function CalendarSection({
                     </span>
                   );
                 })}
-                {count > MAX_CHIPS_PER_DAY && <span className="calendar-more">+{count - MAX_CHIPS_PER_DAY} more</span>}
+                {count > MAX_CHIPS_PER_DAY && <span className="calendar-more">+{count - MAX_CHIPS_PER_DAY} tane daha</span>}
               </div>
             </>
           );
@@ -250,7 +253,7 @@ async function CalendarSection({
 
       {selectedDay && (
         <div className="calendar-day-detail">
-          <h3>Reservations on {selectedDay}</h3>
+          <h3>{selectedDay} tarihindeki rezervasyonlar</h3>
           {selectedBookings.map((booking) => (
             <div className="card" key={booking.id}>
               <p>

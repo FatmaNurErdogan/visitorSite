@@ -3,7 +3,7 @@ BEGIN TRY
 BEGIN TRAN;
 
 -- AlterTable
-ALTER TABLE [dbo].[vms_meeting_room] ADD [perks] NVARCHAR(500);
+ALTER TABLE [tys].[vms_meeting_room] ADD [perks] NVARCHAR(500);
 
 COMMIT TRAN;
 

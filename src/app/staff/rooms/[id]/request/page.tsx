@@ -16,8 +16,8 @@ export default async function RequestRoomPage({ params }: { params: Promise<{ id
   if (!room) {
     return (
       <main className="page-container">
-        <h1>Room not found</h1>
-        <Link href="/staff/rooms">Back to rooms</Link>
+        <h1>Oda bulunamadı</h1>
+        <Link href="/staff/rooms">Odalara dön</Link>
       </main>
     );
   }
@@ -33,20 +33,20 @@ export default async function RequestRoomPage({ params }: { params: Promise<{ id
 
   return (
     <main className="page-container">
-      <h1>Request {room.name}</h1>
+      <h1>{room.name} odasını talep et</h1>
       <p>
-        <Link href="/staff/rooms">Back to rooms</Link>
+        <Link href="/staff/rooms">Odalara dön</Link>
       </p>
 
       {upcomingBookings.length > 0 && (
         <div className="card">
           <p>
-            <strong>Already taken (or pending approval):</strong>
+            <strong>Zaten dolu (veya onay bekliyor):</strong>
           </p>
           {upcomingBookings.map((booking) => (
             <p key={booking.id}>
               {booking.startTime.toLocaleString()} – {booking.endTime.toLocaleTimeString()}
-              {booking.status === "PENDING" ? " (pending)" : ""}
+              {booking.status === "PENDING" ? " (bekliyor)" : ""}
             </p>
           ))}
         </div>

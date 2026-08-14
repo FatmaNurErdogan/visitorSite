@@ -10,13 +10,13 @@ import { createRoomBookingCore } from "@/actions/rooms";
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getMobileUser(req);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Yetkiniz yok" }, { status: 401 });
   }
 
   const { id } = await params;
   const body = await req.json().catch(() => null);
   if (!body) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    return NextResponse.json({ error: "Geçersiz istek gövdesi." }, { status: 400 });
   }
 
   const result = await createRoomBookingCore({

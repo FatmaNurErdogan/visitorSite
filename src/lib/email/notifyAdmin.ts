@@ -14,11 +14,11 @@ export async function sendAdminPendingApprovalNotification(
   await getResend().emails.send({
     from: process.env.RESEND_FROM_EMAIL as string,
     to: adminEmail,
-    subject: `Approval needed: ${visitorName}'s visit to ${hostName}`,
+    subject: `Onay gerekiyor: ${visitorName}, ${hostName} adlı çalışanı ziyaret edecek`,
     html: `
-      <p>${hostName} approved a visit request from ${visitorName} on ${scheduledAt.toLocaleString()}.</p>
-      <p>Reason: ${visitReason}</p>
-      <p>It's now waiting on your final approval. Log in to <a href="${dashboardUrl}">your dashboard</a> to approve or reject it.</p>
+      <p>${hostName}, ${visitorName} adlı ziyaretçinin ${scheduledAt.toLocaleString()} tarihli ziyaret talebini onayladı.</p>
+      <p>Sebep: ${visitReason}</p>
+      <p>Şimdi sizin son onayınızı bekliyor. Onaylamak veya reddetmek için <a href="${dashboardUrl}">panelinize</a> giriş yapın.</p>
     `,
   });
 }

@@ -12,8 +12,8 @@ export function isChatOpen(status: string) {
 export const MAX_MESSAGE_LENGTH = 2000; // Message.body @db.NVarChar(2000) ile eşleşiyor.
 
 export function validateMessageBody(text: string): string | null {
-  if (!text) return "Message can't be empty.";
-  if (text.length > MAX_MESSAGE_LENGTH) return `Message can't be longer than ${MAX_MESSAGE_LENGTH} characters.`;
+  if (!text) return "Mesaj boş olamaz.";
+  if (text.length > MAX_MESSAGE_LENGTH) return `Mesaj en fazla ${MAX_MESSAGE_LENGTH} karakter olabilir.`;
   return null;
 }
 

@@ -16,40 +16,40 @@ async function canGiveFinalApproval(user: MobileTokenPayload, hostEmployeeId: st
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getMobileUser(req);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Yetkiniz yok" }, { status: 401 });
   }
 
   const { id } = await params;
   const visit = await prisma.visit.findUnique({ where: { id } });
   if (!visit) {
-    return NextResponse.json({ error: "Visit not found." }, { status: 404 });
+    return NextResponse.json({ error: "Ziyaret bulunamadı." }, { status: 404 });
   }
 
   try {
     if (visit.status === "PENDING") {
       if (user.role !== "ADMIN" && user.sub !== visit.hostEmployeeId) {
-        return NextResponse.json({ error: "Not authorized to respond to this visit request." }, { status: 403 });
+        return NextResponse.json({ error: "Bu ziyaret talebine yanıt verme yetkiniz yok." }, { status: 403 });
       }
       await rejectVisitCore(id);
     } else if (visit.status === "PENDING_ADMIN_APPROVAL") {
       if (!(await canGiveFinalApproval(user, visit.hostEmployeeId))) {
         return NextResponse.json(
-          { error: "Not authorized to give final approval for this visit request." },
+          { error: "Bu ziyaret talebine son onayı verme yetkiniz yok." },
           { status: 403 }
         );
       }
       const body = await req.json().catch(() => null);
       const reason = (body?.reason as string | undefined)?.trim();
       if (!reason) {
-        return NextResponse.json({ error: "Please explain why you're rejecting this request." }, { status: 400 });
+        return NextResponse.json({ error: "Lütfen bu talebi neden reddettiğinizi açıklayın." }, { status: 400 });
       }
       await rejectVisitByAdminCore(id, reason);
     } else {
-      return NextResponse.json({ error: "This visit request has already been processed." }, { status: 409 });
+      return NextResponse.json({ error: "Bu ziyaret talebi zaten işlendi." }, { status: 409 });
     }
   } catch (error) {
     if (isRecordNotFoundError(error)) {
-      return NextResponse.json({ error: "This visit request has already been processed." }, { status: 409 });
+      return NextResponse.json({ error: "Bu ziyaret talebi zaten işlendi." }, { status: 409 });
     }
     throw error;
   }

@@ -65,7 +65,7 @@ export function ChatBox({ apiUrl, viewerType }: { apiUrl: string; viewerType: "V
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Failed to send message.");
+        setError(data.error ?? "Mesaj gönderilemedi.");
         return;
       }
       // Append immediately rather than waiting for the next poll tick, so
@@ -73,7 +73,7 @@ export function ChatBox({ apiUrl, viewerType }: { apiUrl: string; viewerType: "V
       setMessages((prev) => [...prev, data.message]);
       setText("");
     } catch {
-      setError("Failed to send message.");
+      setError("Mesaj gönderilemedi.");
     } finally {
       setSending(false);
     }
@@ -82,7 +82,7 @@ export function ChatBox({ apiUrl, viewerType }: { apiUrl: string; viewerType: "V
   return (
     <div className="chat-box">
       <div className="chat-messages">
-        {messages.length === 0 && <p className="chat-empty">No messages yet.</p>}
+        {messages.length === 0 && <p className="chat-empty">Henüz mesaj yok.</p>}
         {messages.map((message) => (
           <div
             key={message.id}
@@ -100,11 +100,11 @@ export function ChatBox({ apiUrl, viewerType }: { apiUrl: string; viewerType: "V
           className="form-input"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message..."
+          placeholder="Bir mesaj yazın..."
           disabled={sending}
         />
         <button className="btn btn-primary" type="submit" disabled={sending || !text.trim()}>
-          Send
+          Gönder
         </button>
       </form>
       {error && <p className="form-error">{error}</p>}

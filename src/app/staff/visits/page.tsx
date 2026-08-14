@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { UserPlus } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isChatOpen } from "@/actions/messages";
 import { StatusBadge } from "@/components/StatusBadge";
+import { StatusFilter } from "@/components/StatusFilter";
+
+export const dynamic = "force-dynamic";
 
 const STATUSES = [
   "PENDING",
@@ -37,53 +41,44 @@ export default async function StaffVisitsPage({
 
   return (
     <main className="staff-visits-page page-container-wide">
-      <h1>Visits</h1>
-      <p>
-        <Link href="/staff/dashboard">Dashboard</Link> &middot; <Link href="/staff/visits/new">Log a walk-in</Link>{" "}
-        &middot; <Link href="/staff/rooms">Meeting rooms</Link>
-      </p>
-      <p>Read-only log of every visit. Approve/reject requests and confirm arrivals/exits from the dashboard.</p>
+      <div className="page-header-row">
+        <div>
+          <h1>Ziyaretler</h1>
+          <p>Tüm ziyaretlerin salt okunur kaydı. Talepleri onaylamak/reddetmek ve giriş/çıkışları onaylamak için panele gidin.</p>
+        </div>
+        <Link href="/staff/visits/new" className="btn btn-secondary">
+          <UserPlus size={15} strokeWidth={2} /> Kapıdan gelen ziyaretçi ekle
+        </Link>
+      </div>
 
-      <form method="get">
-        <label className="form-label" htmlFor="status">
-          Filter by status
-        </label>{" "}
-        <select id="status" name="status" defaultValue={status ?? ""}>
-          <option value="">All</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>{" "}
-        <button className="btn btn-secondary" type="submit">
-          Filter
-        </button>
-      </form>
+      <div className="filter-bar">
+        <span className="form-label">Duruma göre filtrele</span>
+        <StatusFilter statuses={STATUSES} value={status ?? ""} />
+      </div>
 
       <table className="table">
         <thead>
           <tr>
-            <th>Visitor</th>
-            <th>Company</th>
+            <th>Ziyaretçi</th>
+            <th>Şirket</th>
             <th>Host</th>
-            <th>Reason</th>
-            <th>Expected time</th>
-            <th>Actual arrival/exit time</th>
-            <th>Status</th>
-            <th>Rejection reason</th>
-            <th>Chat</th>
+            <th>Sebep</th>
+            <th>Beklenen saat</th>
+            <th>Gerçek giriş/çıkış saati</th>
+            <th>Durum</th>
+            <th>Reddetme sebebi</th>
+            <th>Sohbet</th>
           </tr>
         </thead>
         <tbody>
           {visits.map((visit) => (
             <tr key={visit.id}>
-              <td data-label="Visitor">{visit.visitor.name}</td>
-              <td data-label="Company">{visit.visitor.company || "-"}</td>
+              <td data-label="Ziyaretçi">{visit.visitor.name}</td>
+              <td data-label="Şirket">{visit.visitor.company || "-"}</td>
               <td data-label="Host">{visit.hostEmployee.name}</td>
-              <td data-label="Reason">{visit.visitReason}</td>
-              <td data-label="Expected time">{visit.scheduledAt.toLocaleString()}</td>
-              <td data-label="Actual arrival/exit time">
+              <td data-label="Sebep">{visit.visitReason}</td>
+              <td data-label="Beklenen saat">{visit.scheduledAt.toLocaleString()}</td>
+              <td data-label="Gerçek giriş/çıkış saati">
                 {visit.checkedInAt ? (
                   <>
                     {visit.checkedInAt.toLocaleTimeString()}
@@ -93,13 +88,13 @@ export default async function StaffVisitsPage({
                   "-"
                 )}
               </td>
-              <td data-label="Status">
+              <td data-label="Durum">
                 <StatusBadge status={visit.status} />
               </td>
-              <td data-label="Rejection reason">{visit.adminRejectionReason || "-"}</td>
-              <td data-label="Chat">
+              <td data-label="Reddetme sebebi">{visit.adminRejectionReason || "-"}</td>
+              <td data-label="Sohbet">
                 {isChatOpen(visit.status) && canChat(visit.hostEmployeeId) ? (
-                  <Link href={`/staff/visits/${visit.id}/chat`}>Open chat</Link>
+                  <Link href={`/staff/visits/${visit.id}/chat`}>Sohbeti aç</Link>
                 ) : (
                   "-"
                 )}

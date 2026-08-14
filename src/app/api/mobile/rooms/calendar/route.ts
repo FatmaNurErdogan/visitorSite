@@ -9,7 +9,7 @@ import { parseMonthParam } from "@/lib/month";
 export async function GET(req: Request) {
   const user = await getMobileUser(req);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Yetkiniz yok" }, { status: 401 });
   }
 
   const { searchParams } = new URL(req.url);

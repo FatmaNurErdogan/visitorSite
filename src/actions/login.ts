@@ -15,7 +15,7 @@ export async function loginAction(_prevState: string | undefined, formData: Form
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return "Invalid email or password, or this account doesn't have access from this login.";
+      return "E-posta veya şifre hatalı, ya da bu hesabın bu girişten erişimi yok.";
     }
     throw error;
   }

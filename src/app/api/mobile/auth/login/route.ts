@@ -5,7 +5,7 @@ import { signMobileToken } from "@/lib/mobileAuth";
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   if (!body) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    return NextResponse.json({ error: "Geçersiz istek gövdesi." }, { status: 400 });
   }
 
   const { email, password, expectedRole } = body as {
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
 
   const staff = await verifyStaffCredentials(email, password, expectedRole);
   if (!staff) {
-    return NextResponse.json({ error: "Invalid email or password, or this account doesn't have access from this login." }, { status: 401 });
+    return NextResponse.json({ error: "E-posta veya şifre hatalı, ya da bu hesabın bu girişten erişimi yok." }, { status: 401 });
   }
 
   const token = await signMobileToken({

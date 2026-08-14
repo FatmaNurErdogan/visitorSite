@@ -3,7 +3,7 @@ BEGIN TRY
 BEGIN TRAN;
 
 -- CreateTable
-CREATE TABLE [dbo].[vms_meeting_room] (
+CREATE TABLE [tys].[vms_meeting_room] (
     [id] NVARCHAR(1000) NOT NULL,
     [name] NVARCHAR(1000) NOT NULL,
     [location] NVARCHAR(1000),
@@ -14,7 +14,7 @@ CREATE TABLE [dbo].[vms_meeting_room] (
 );
 
 -- CreateTable
-CREATE TABLE [dbo].[vms_room_booking] (
+CREATE TABLE [tys].[vms_room_booking] (
     [id] NVARCHAR(1000) NOT NULL,
     [roomId] NVARCHAR(1000) NOT NULL,
     [visitId] NVARCHAR(1000),
@@ -30,16 +30,16 @@ CREATE TABLE [dbo].[vms_room_booking] (
 );
 
 -- AddForeignKey
-ALTER TABLE [dbo].[vms_room_booking] ADD CONSTRAINT [vms_room_booking_roomId_fkey] FOREIGN KEY ([roomId]) REFERENCES [dbo].[vms_meeting_room]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE [tys].[vms_room_booking] ADD CONSTRAINT [vms_room_booking_roomId_fkey] FOREIGN KEY ([roomId]) REFERENCES [tys].[vms_meeting_room]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE [dbo].[vms_room_booking] ADD CONSTRAINT [vms_room_booking_visitId_fkey] FOREIGN KEY ([visitId]) REFERENCES [dbo].[vms_visit]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE [tys].[vms_room_booking] ADD CONSTRAINT [vms_room_booking_visitId_fkey] FOREIGN KEY ([visitId]) REFERENCES [tys].[vms_visit]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE [dbo].[vms_room_booking] ADD CONSTRAINT [vms_room_booking_requestedById_fkey] FOREIGN KEY ([requestedById]) REFERENCES [dbo].[vms_staff]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE [tys].[vms_room_booking] ADD CONSTRAINT [vms_room_booking_requestedById_fkey] FOREIGN KEY ([requestedById]) REFERENCES [tys].[vms_staff]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE [dbo].[vms_room_booking] ADD CONSTRAINT [vms_room_booking_approvedById_fkey] FOREIGN KEY ([approvedById]) REFERENCES [dbo].[vms_staff]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE [tys].[vms_room_booking] ADD CONSTRAINT [vms_room_booking_approvedById_fkey] FOREIGN KEY ([approvedById]) REFERENCES [tys].[vms_staff]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 COMMIT TRAN;
 

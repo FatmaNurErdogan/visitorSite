@@ -14,9 +14,9 @@ export default async function DepartmentsPage() {
   if (session?.user?.role !== "ADMIN") {
     return (
       <main className="page-container">
-        <h1>Not authorized</h1>
-        <p>Only admins can manage departments.</p>
-        <Link href="/staff/dashboard">Back to dashboard</Link>
+        <h1>Yetkiniz yok</h1>
+        <p>Departmanları yalnızca yöneticiler yönetebilir.</p>
+        <Link href="/staff/dashboard">Panele dön</Link>
       </main>
     );
   }
@@ -25,28 +25,25 @@ export default async function DepartmentsPage() {
 
   return (
     <main className="staff-users-page page-container-wide">
-      <h1>Departments</h1>
-      <p>
-        <Link href="/staff/dashboard">Dashboard</Link> &middot; <Link href="/staff/staff-users">Staff accounts</Link>
-      </p>
+      <h1>Departmanlar</h1>
 
       <DepartmentForm />
 
       <table className="table">
         <thead>
           <tr>
-            <th>Name</th>
+            <th>Ad</th>
           </tr>
         </thead>
         <tbody>
           {departments.length === 0 && (
             <tr>
-              <td>No departments yet.</td>
+              <td>Henüz departman yok.</td>
             </tr>
           )}
           {departments.map((department) => (
             <tr key={department.id}>
-              <td data-label="Name">{department.name}</td>
+              <td data-label="Ad">{department.name}</td>
             </tr>
           ))}
         </tbody>

@@ -10,18 +10,18 @@ import { isChatOpen, listMessagesCore, sendStaffMessageCore } from "@/actions/me
 async function authorizeStaffChat(visitId: string) {
   const session = await auth();
   if (!session?.user) {
-    return { error: "Unauthorized", status: 401 as const };
+    return { error: "Yetkiniz yok", status: 401 as const };
   }
 
   const visit = await prisma.visit.findUnique({ where: { id: visitId } });
   if (!visit) {
-    return { error: "Visit not found.", status: 404 as const };
+    return { error: "Ziyaret bulunamadı.", status: 404 as const };
   }
 
   const role = session.user.role;
   const userId = session.user.id;
   if (role !== "ADMIN" && userId !== visit.hostEmployeeId) {
-    return { error: "Only the host or an admin can open this chat.", status: 403 as const };
+    return { error: "Bu sohbeti yalnızca host veya bir yönetici açabilir.", status: 403 as const };
   }
 
   return { visit, staffId: userId as string };
@@ -34,7 +34,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   if (!isChatOpen(result.visit.status)) {
-    return NextResponse.json({ error: "Chat isn't open for this visit." }, { status: 409 });
+    return NextResponse.json({ error: "Bu ziyaret için sohbet açık değil." }, { status: 409 });
   }
 
   const messages = await listMessagesCore(id);
@@ -48,13 +48,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   if (!isChatOpen(result.visit.status)) {
-    return NextResponse.json({ error: "Chat isn't open for this visit." }, { status: 409 });
+    return NextResponse.json({ error: "Bu ziyaret için sohbet açık değil." }, { status: 409 });
   }
 
   const body = await req.json().catch(() => null);
   const text = typeof body?.body === "string" ? body.body.trim() : "";
   if (!text) {
-    return NextResponse.json({ error: "Message can't be empty." }, { status: 400 });
+    return NextResponse.json({ error: "Mesaj boş olamaz." }, { status: 400 });
   }
 
   const message = await sendStaffMessageCore(id, result.staffId, text);
