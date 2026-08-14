@@ -22,14 +22,7 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
   if (state?.success) {
     return (
       <div className="card">
-        {state.scheduleConflict ? (
-          <p>
-            Üzgünüz, host&apos;unuzun o saatlerde zaten başka bir ziyareti planlanmış. Size e-posta gönderdik —
-            lütfen farklı bir saat için yeni bir talep gönderin.
-          </p>
-        ) : (
-          <p>Teşekkürler! Ziyaret talebiniz gönderildi ve onay bekliyor.</p>
-        )}
+        <p>Teşekkürler! Ziyaret talebiniz gönderildi ve onay bekliyor.</p>
       </div>
     );
   }
@@ -78,12 +71,25 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="scheduledAt">
-          Tarih ve saat (yalnızca 9:00–18:00 arası)
+          Başlangıç saati (yalnızca 9:00–18:00 arası)
         </label>
         <input
           className="form-input"
           id="scheduledAt"
           name="scheduledAt"
+          type="datetime-local"
+          min={nowForDateTimeInput()}
+          required
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label" htmlFor="scheduledEndAt">
+          Bitiş saati (aynı gün, en geç 18:00)
+        </label>
+        <input
+          className="form-input"
+          id="scheduledEndAt"
+          name="scheduledEndAt"
           type="datetime-local"
           min={nowForDateTimeInput()}
           required

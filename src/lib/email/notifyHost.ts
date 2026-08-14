@@ -1,4 +1,5 @@
 import { getResend } from "@/lib/email/resend";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 export async function sendHostRequestNotification(
   hostEmail: string,
@@ -13,8 +14,8 @@ export async function sendHostRequestNotification(
     to: hostEmail,
     subject: `${visitorName} tarafından yeni bir ziyaret talebi`,
     html: `
-      <p>${visitorName}, sizi ${scheduledAt.toLocaleString()} tarihinde ziyaret etmek istiyor.</p>
-      <p>Sebep: ${visitReason}</p>
+      <p>${escapeHtml(visitorName)}, sizi ${scheduledAt.toLocaleString()} tarihinde ziyaret etmek istiyor.</p>
+      <p>Sebep: ${escapeHtml(visitReason)}</p>
       <p>Bu talebi onaylamak veya reddetmek için <a href="${dashboardUrl}">panelinize</a> giriş yapın.</p>
     `,
   });
@@ -28,7 +29,7 @@ export async function sendVisitorArrivedNotification(hostEmail: string, visitorN
     to: hostEmail,
     subject: `${visitorName} geldi`,
     html: `
-      <p>${visitorName} resepsiyonda giriş yaptı ve size doğru geliyor.</p>
+      <p>${escapeHtml(visitorName)} resepsiyonda giriş yaptı ve size doğru geliyor.</p>
     `,
   });
 }
@@ -41,7 +42,7 @@ export async function sendVisitorDepartedNotification(hostEmail: string, visitor
     to: hostEmail,
     subject: `${visitorName} ayrıldı`,
     html: `
-      <p>${visitorName} resepsiyonda çıkış yaptı ve binadan ayrıldı.</p>
+      <p>${escapeHtml(visitorName)} resepsiyonda çıkış yaptı ve binadan ayrıldı.</p>
     `,
   });
 }
@@ -63,13 +64,13 @@ export async function sendHostFinalDecisionNotification(
     subject: isApproved ? `${visitorName} adlı ziyaretçinin ziyareti onaylandı` : `${visitorName} adlı ziyaretçinin ziyareti reddedildi`,
     html: isApproved
       ? `
-        <p>Merhaba ${hostName},</p>
-        <p>Onayladığınız ${visitorName} ziyaret talebi, departman yöneticisi tarafından da <strong>son olarak onaylandı</strong>. Ziyaretçiye bilgi verildi.</p>
+        <p>Merhaba ${escapeHtml(hostName)},</p>
+        <p>Onayladığınız ${escapeHtml(visitorName)} ziyaret talebi, departman yöneticisi tarafından da <strong>son olarak onaylandı</strong>. Ziyaretçiye bilgi verildi.</p>
       `
       : `
-        <p>Merhaba ${hostName},</p>
-        <p>Onayladığınız ${visitorName} ziyaret talebi, departman yöneticisi tarafından <strong>reddedildi</strong>.</p>
-        ${reason ? `<p>Sebep: ${reason}</p>` : ""}
+        <p>Merhaba ${escapeHtml(hostName)},</p>
+        <p>Onayladığınız ${escapeHtml(visitorName)} ziyaret talebi, departman yöneticisi tarafından <strong>reddedildi</strong>.</p>
+        ${reason ? `<p>Sebep: ${escapeHtml(reason)}</p>` : ""}
       `,
   });
 }

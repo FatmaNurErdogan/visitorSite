@@ -1,4 +1,5 @@
 import { getResend } from "@/lib/email/resend";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 // Personel bir ziyaret talebini onayladığında, o departmanın admin'ine
 // (departmanın admin'i yoksa genel admin'e) giden "senin onayın bekleniyor" maili.
@@ -16,8 +17,8 @@ export async function sendAdminPendingApprovalNotification(
     to: adminEmail,
     subject: `Onay gerekiyor: ${visitorName}, ${hostName} adlı çalışanı ziyaret edecek`,
     html: `
-      <p>${hostName}, ${visitorName} adlı ziyaretçinin ${scheduledAt.toLocaleString()} tarihli ziyaret talebini onayladı.</p>
-      <p>Sebep: ${visitReason}</p>
+      <p>${escapeHtml(hostName)}, ${escapeHtml(visitorName)} adlı ziyaretçinin ${scheduledAt.toLocaleString()} tarihli ziyaret talebini onayladı.</p>
+      <p>Sebep: ${escapeHtml(visitReason)}</p>
       <p>Şimdi sizin son onayınızı bekliyor. Onaylamak veya reddetmek için <a href="${dashboardUrl}">panelinize</a> giriş yapın.</p>
     `,
   });

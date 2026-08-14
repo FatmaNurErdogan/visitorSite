@@ -96,7 +96,7 @@ export default async function StaffDashboardPage() {
             <div className="card" key={visit.id}>
               <p>
                 <strong>{visit.visitor.name}</strong> ({visit.visitor.company || "şirket belirtilmedi"}){" "}
-                {visit.hostEmployee.name} adlı çalışanı {visit.scheduledAt.toLocaleString()} tarihinde ziyaret etmek istiyor
+                {visit.hostEmployee.name} adlı çalışanı {visit.scheduledAt.toLocaleString()} – {visit.scheduledEndAt.toLocaleTimeString()} tarihinde ziyaret etmek istiyor
               </p>
               <p>Sebep: {visit.visitReason}</p>
               <form action={approveVisit.bind(null, visit.id)} style={{ display: "inline" }}>
@@ -125,7 +125,7 @@ export default async function StaffDashboardPage() {
             <div className="card" key={visit.id}>
               <p>
                 <strong>{visit.visitor.name}</strong> ({visit.visitor.company || "şirket belirtilmedi"}){" "}
-                {visit.hostEmployee.name} adlı çalışanı {visit.scheduledAt.toLocaleString()} tarihinde ziyaret etmek istiyor
+                {visit.hostEmployee.name} adlı çalışanı {visit.scheduledAt.toLocaleString()} – {visit.scheduledEndAt.toLocaleTimeString()} tarihinde ziyaret etmek istiyor
               </p>
               <p>Sebep: {visit.visitReason}</p>
               <form action={approveVisitByAdmin.bind(null, visit.id)} style={{ display: "inline" }}>

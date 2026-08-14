@@ -1,11 +1,11 @@
 "use server";
 
 import { randomUUID } from "crypto";
+import { Prisma, type Visit } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { type Visit } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { isRecordNotFoundError } from "@/lib/prismaErrors";
+import { isRecordNotFoundError, runSerializable } from "@/lib/prismaErrors";
 import {
   sendHostRequestNotification,
   sendHostFinalDecisionNotification,
@@ -13,14 +13,11 @@ import {
   sendVisitorDepartedNotification,
 } from "@/lib/email/notifyHost";
 import { sendAdminPendingApprovalNotification } from "@/lib/email/notifyAdmin";
-import { sendVisitorDecisionNotification, sendVisitorScheduleConflictNotification } from "@/lib/email/notifyVisitor";
+import { sendVisitorDecisionNotification } from "@/lib/email/notifyVisitor";
 
 export type VisitRequestState = {
   error?: string;
   success?: boolean;
-  // Talep oluşturuldu ama host'un o saatte başka kabul edilmiş bir ziyareti
-  // olduğu için otomatik reddedildi — form buna göre farklı bir mesaj gösterir.
-  scheduleConflict?: boolean;
 };
 
 export type CreateVisitRequestInput = {
@@ -31,51 +28,73 @@ export type CreateVisitRequestInput = {
   hostEmployeeId: string;
   visitReason: string;
   scheduledAt: string;
+  scheduledEndAt: string;
 };
 
 export type CreateVisitRequestResult =
   | { error: string; success?: undefined; visit?: undefined }
-  | { success: true; error?: undefined; visit: Visit; scheduleConflict?: boolean };
+  | { success: true; error?: undefined; visit: Visit };
 
-// Randevular için sabit bir süre varsayıyoruz (Visit'in bir bitiş saati yok) —
-// aynı host için bu süre içinde çakışan başka bir kabul edilmiş ziyaret var mı bakar.
-const VISIT_DURATION_MS = 60 * 60 * 1000;
-
-async function hostHasScheduleConflict(hostEmployeeId: string, scheduledAt: Date) {
-  const windowStart = new Date(scheduledAt.getTime() - VISIT_DURATION_MS + 1);
-  const windowEnd = new Date(scheduledAt.getTime() + VISIT_DURATION_MS - 1);
-  const conflict = await prisma.visit.findFirst({
+// Bir host için, verilen [scheduledAt, scheduledEndAt) aralığıyla kesişen,
+// henüz sonuçlanmamış (PENDING/PENDING_ADMIN_APPROVAL/ACCEPTED/CHECKED_IN)
+// başka bir ziyaret var mı — varsa yeni talep hiç oluşturulmuyor. tx her
+// zaman bir Prisma.TransactionClient olmalı (bkz. createVisitRequestCore) —
+// aynı rooms.ts'teki roomHasConflict deseninde, SERIALIZABLE izolasyon bu
+// SELECT'in aldığı range lock'u commit'e kadar tutarak iki eşzamanlı talebin
+// ikisinin de çakışmayı kaçırmasını önlüyor.
+async function hostHasRangeConflict(
+  tx: Prisma.TransactionClient,
+  hostEmployeeId: string,
+  scheduledAt: Date,
+  scheduledEndAt: Date
+) {
+  const conflict = await tx.visit.findFirst({
     where: {
       hostEmployeeId,
-      status: { in: ["ACCEPTED", "CHECKED_IN"] },
-      scheduledAt: { gt: windowStart, lt: windowEnd },
+      status: { in: ["PENDING", "PENDING_ADMIN_APPROVAL", "ACCEPTED", "CHECKED_IN"] },
+      scheduledAt: { lt: scheduledEndAt },
+      scheduledEndAt: { gt: scheduledAt },
     },
   });
   return Boolean(conflict);
 }
 
-// Ziyaret talebini oluşturan asıl mantık: doğrulama + visitor/visit kaydı +
-// host'a email bildirimi. Hem web form action'ı hem mobil API route'u
-// (src/app/api/mobile/visits) bunu çağırır.
+// Ziyaret talebini oluşturan asıl mantık: doğrulama + çakışma kontrolü +
+// visitor/visit kaydı + host'a email bildirimi. Hem web form action'ı hem
+// mobil API route'u (src/app/api/mobile/visits) bunu çağırır.
 export async function createVisitRequestCore(input: CreateVisitRequestInput): Promise<CreateVisitRequestResult> {
   const { name, phone, email, company, hostEmployeeId, visitReason } = input;
   const scheduledAtRaw = input.scheduledAt;
+  const scheduledEndAtRaw = input.scheduledEndAt;
 
-  if (!name || !phone || !email || !hostEmployeeId || !visitReason || !scheduledAtRaw) {
+  if (!name || !phone || !email || !hostEmployeeId || !visitReason || !scheduledAtRaw || !scheduledEndAtRaw) {
     return { error: "Lütfen tüm zorunlu alanları doldurun." };
   }
 
   const scheduledAt = new Date(scheduledAtRaw);
-  if (Number.isNaN(scheduledAt.getTime())) {
+  const scheduledEndAt = new Date(scheduledEndAtRaw);
+  if (Number.isNaN(scheduledAt.getTime()) || Number.isNaN(scheduledEndAt.getTime())) {
     return { error: "Lütfen geçerli bir tarih ve saat girin." };
   }
   if (scheduledAt.getTime() < Date.now()) {
     return { error: "Lütfen gelecekte bir tarih ve saat seçin." };
   }
-  // Randevular sadece mesai saatleri içinde alınabilir.
+  if (scheduledEndAt.getTime() <= scheduledAt.getTime()) {
+    return { error: "Bitiş saati başlangıç saatinden sonra olmalı." };
+  }
+  // Randevular sadece mesai saatleri içinde, aynı gün içinde alınabilir.
   const hour = scheduledAt.getHours();
   if (hour < 9 || hour >= 18) {
-    return { error: "Lütfen 9:00 ile 18:00 arasında bir saat seçin." };
+    return { error: "Lütfen başlangıç için 9:00 ile 18:00 arasında bir saat seçin." };
+  }
+  const endHour = scheduledEndAt.getHours();
+  const endMinute = scheduledEndAt.getMinutes();
+  const sameDay =
+    scheduledEndAt.getFullYear() === scheduledAt.getFullYear() &&
+    scheduledEndAt.getMonth() === scheduledAt.getMonth() &&
+    scheduledEndAt.getDate() === scheduledAt.getDate();
+  if (!sameDay || endHour < 9 || endHour > 18 || (endHour === 18 && endMinute > 0)) {
+    return { error: "Lütfen bitiş için aynı gün içinde 9:00 ile 18:00 arasında bir saat seçin." };
   }
 
   const host = await prisma.staff.findUnique({ where: { id: hostEmployeeId } });
@@ -83,49 +102,41 @@ export async function createVisitRequestCore(input: CreateVisitRequestInput): Pr
     return { error: "Lütfen kimi ziyaret ettiğinizi seçin." };
   }
 
-  const visitor = await prisma.visitor.create({
-    data: { name, phone, email, company },
-  });
-
-  // Host'un o saatte zaten kabul edilmiş (ACCEPTED/CHECKED_IN) başka bir
-  // ziyareti varsa talep otomatik reddedilir — host'a hiç gitmez, ziyaretçiye
-  // farklı bir saat denemesini söyleyen bir mail gider.
-  const hasScheduleConflict = await hostHasScheduleConflict(hostEmployeeId, scheduledAt);
-
-  const visit = await prisma.visit.create({
-    data: {
-      visitorId: visitor.id,
-      hostEmployeeId,
-      visitReason,
-      scheduledAt,
-      accessToken: randomUUID(),
-      tokenExpiresAt: new Date(scheduledAt.getTime() + 24 * 60 * 60 * 1000),
-      ...(hasScheduleConflict
-        ? {
-            status: "REJECTED",
-            respondedAt: new Date(),
-            adminRejectionReason: `${host.name} adlı çalışanın o saatlerde zaten başka bir ziyareti planlanmış.`,
-          }
-        : {}),
-    },
-  });
-
-  if (hasScheduleConflict) {
-    try {
-      await sendVisitorScheduleConflictNotification(visitor.email ?? email, visitor.name, host.name, scheduledAt);
-    } catch (error) {
-      console.error(`Failed to send schedule-conflict notification for visit ${visit.id}:`, error);
+  const outcome = await runSerializable(async (tx) => {
+    if (await hostHasRangeConflict(tx, hostEmployeeId, scheduledAt, scheduledEndAt)) {
+      return { conflict: true } as const;
     }
-    return { success: true, visit, scheduleConflict: true };
+
+    const visitor = await tx.visitor.create({
+      data: { name, phone, email, company },
+    });
+
+    const visit = await tx.visit.create({
+      data: {
+        visitorId: visitor.id,
+        hostEmployeeId,
+        visitReason,
+        scheduledAt,
+        scheduledEndAt,
+        accessToken: randomUUID(),
+        tokenExpiresAt: new Date(scheduledEndAt.getTime() + 24 * 60 * 60 * 1000),
+      },
+    });
+
+    return { visit } as const;
+  });
+
+  if ("conflict" in outcome) {
+    return { error: `${host.name} adlı çalışanın o saat aralığında zaten başka bir ziyareti planlanmış. Lütfen farklı bir saat seçin.` };
   }
 
   try {
-    await sendHostRequestNotification(host.email, visitor.name, visitReason, scheduledAt);
+    await sendHostRequestNotification(host.email, name, visitReason, scheduledAt);
   } catch (error) {
-    console.error(`Failed to send host notification for visit ${visit.id}:`, error);
+    console.error(`Failed to send host notification for visit ${outcome.visit.id}:`, error);
   }
 
-  return { success: true, visit };
+  return { success: true, visit: outcome.visit };
 }
 
 export async function createVisitRequest(
@@ -140,12 +151,13 @@ export async function createVisitRequest(
     hostEmployeeId: formData.get("hostEmployeeId") as string,
     visitReason: formData.get("visitReason") as string,
     scheduledAt: formData.get("scheduledAt") as string,
+    scheduledEndAt: formData.get("scheduledEndAt") as string,
   });
 
   if (result.success) {
     revalidatePath("/staff/dashboard");
     revalidatePath("/staff/visits");
-    return { success: true, scheduleConflict: result.scheduleConflict };
+    return { success: true };
   }
 
   return { error: result.error };
