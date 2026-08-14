@@ -22,14 +22,7 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
   if (state?.success) {
     return (
       <div className="card">
-        {state.scheduleConflict ? (
-          <p>
-            Sorry, your host already has another visit scheduled around that time. We&apos;ve emailed you — please
-            submit a new request for a different time.
-          </p>
-        ) : (
-          <p>Thanks! Your visit request has been submitted and is waiting for approval.</p>
-        )}
+        <p>Thanks! Your visit request has been submitted and is waiting for approval.</p>
       </div>
     );
   }
@@ -78,12 +71,25 @@ export function VisitRequestForm({ hosts }: { hosts: HostOption[] }) {
       </div>
       <div className="form-group">
         <label className="form-label" htmlFor="scheduledAt">
-          Date and time (9:00–18:00 only)
+          Start time (9:00–18:00 only)
         </label>
         <input
           className="form-input"
           id="scheduledAt"
           name="scheduledAt"
+          type="datetime-local"
+          min={nowForDateTimeInput()}
+          required
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label" htmlFor="scheduledEndAt">
+          End time (same day, by 18:00)
+        </label>
+        <input
+          className="form-input"
+          id="scheduledEndAt"
+          name="scheduledEndAt"
           type="datetime-local"
           min={nowForDateTimeInput()}
           required

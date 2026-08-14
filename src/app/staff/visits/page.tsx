@@ -82,7 +82,7 @@ export default async function StaffVisitsPage({
               <td data-label="Company">{visit.visitor.company || "-"}</td>
               <td data-label="Host">{visit.hostEmployee.name}</td>
               <td data-label="Reason">{visit.visitReason}</td>
-              <td data-label="Expected time">{visit.scheduledAt.toLocaleString()}</td>
+              <td data-label="Expected time">{visit.scheduledAt.toLocaleString()} – {visit.scheduledEndAt.toLocaleTimeString()}</td>
               <td data-label="Actual arrival/exit time">
                 {visit.checkedInAt ? (
                   <>

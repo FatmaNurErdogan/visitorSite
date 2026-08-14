@@ -37,11 +37,12 @@ export async function POST(req: Request) {
     hostEmployeeId: body.hostEmployeeId,
     visitReason: body.visitReason,
     scheduledAt: body.scheduledAt,
+    scheduledEndAt: body.scheduledEndAt,
   });
 
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  return NextResponse.json({ visit: result.visit, scheduleConflict: result.scheduleConflict ?? false }, { status: 201 });
+  return NextResponse.json({ visit: result.visit }, { status: 201 });
 }

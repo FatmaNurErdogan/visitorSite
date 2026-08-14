@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { isRecordNotFoundError } from "@/lib/prismaErrors";
+import { isRecordNotFoundError, runSerializable } from "@/lib/prismaErrors";
 import { approveVisitCore } from "@/actions/visits";
 
 async function requireAdmin() {
@@ -149,24 +149,21 @@ export async function createRoomBookingCore(input: CreateRoomBookingInput): Prom
     return { error: "End time must be after the start time." };
   }
 
-  const hadConflict = await prisma.$transaction(
-    async (tx) => {
-      if (await roomHasConflict(tx, input.roomId, startTime, endTime)) {
-        return true;
-      }
-      await tx.roomBooking.create({
-        data: {
-          roomId: input.roomId,
-          requestedById: input.requestedById,
-          purpose,
-          startTime,
-          endTime,
-        },
-      });
-      return false;
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-  );
+  const hadConflict = await runSerializable(async (tx) => {
+    if (await roomHasConflict(tx, input.roomId, startTime, endTime)) {
+      return true;
+    }
+    await tx.roomBooking.create({
+      data: {
+        roomId: input.roomId,
+        requestedById: input.requestedById,
+        purpose,
+        startTime,
+        endTime,
+      },
+    });
+    return false;
+  });
 
   if (hadConflict) {
     return { error: "This room is already booked for that time — please pick a different time." };
@@ -237,27 +234,24 @@ export async function createDirectRoomBookingCore(adminId: string, input: BookRo
     return { error: "Please select a meeting room." };
   }
 
-  const hadConflict = await prisma.$transaction(
-    async (tx) => {
-      if (await roomHasConflict(tx, room.id, startTime, endTime)) {
-        return true;
-      }
-      await tx.roomBooking.create({
-        data: {
-          roomId: room.id,
-          requestedById: adminId,
-          approvedById: adminId,
-          purpose,
-          startTime,
-          endTime,
-          status: "APPROVED",
-          respondedAt: new Date(),
-        },
-      });
-      return false;
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-  );
+  const hadConflict = await runSerializable(async (tx) => {
+    if (await roomHasConflict(tx, room.id, startTime, endTime)) {
+      return true;
+    }
+    await tx.roomBooking.create({
+      data: {
+        roomId: room.id,
+        requestedById: adminId,
+        approvedById: adminId,
+        purpose,
+        startTime,
+        endTime,
+        status: "APPROVED",
+        respondedAt: new Date(),
+      },
+    });
+    return false;
+  });
 
   if (hadConflict) {
     return { error: "This room is already booked for that time." };
@@ -328,24 +322,21 @@ export async function bookRoom(
 export async function approveRoomBooking(bookingId: string) {
   const session = await requireAdmin();
 
-  const outcome = await prisma.$transaction(
-    async (tx) => {
-      const booking = await tx.roomBooking.findUniqueOrThrow({ where: { id: bookingId } });
-      if (booking.status !== "PENDING") return { skipped: true } as const; // başka biri zaten işlemiş
+  const outcome = await runSerializable(async (tx) => {
+    const booking = await tx.roomBooking.findUniqueOrThrow({ where: { id: bookingId } });
+    if (booking.status !== "PENDING") return { skipped: true } as const; // başka biri zaten işlemiş
 
-      if (await roomHasConflict(tx, booking.roomId, booking.startTime, booking.endTime, booking.id)) {
-        return { conflict: true } as const;
-      }
+    if (await roomHasConflict(tx, booking.roomId, booking.startTime, booking.endTime, booking.id)) {
+      return { conflict: true } as const;
+    }
 
-      await tx.roomBooking.update({
-        where: { id: bookingId, status: "PENDING" },
-        data: { status: "APPROVED", respondedAt: new Date(), approvedById: session.user!.id },
-      });
+    await tx.roomBooking.update({
+      where: { id: bookingId, status: "PENDING" },
+      data: { status: "APPROVED", respondedAt: new Date(), approvedById: session.user!.id },
+    });
 
-      return { visitId: booking.visitId } as const;
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-  );
+    return { visitId: booking.visitId } as const;
+  });
 
   if ("skipped" in outcome) return;
   if ("conflict" in outcome) {

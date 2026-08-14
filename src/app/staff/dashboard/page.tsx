@@ -102,7 +102,7 @@ export default async function StaffDashboardPage() {
             <div className="card" key={visit.id}>
               <p>
                 <strong>{visit.visitor.name}</strong> ({visit.visitor.company || "no company"}) wants to visit{" "}
-                {visit.hostEmployee.name} on {visit.scheduledAt.toLocaleString()}
+                {visit.hostEmployee.name} on {visit.scheduledAt.toLocaleString()} – {visit.scheduledEndAt.toLocaleTimeString()}
               </p>
               <p>Reason: {visit.visitReason}</p>
               <form action={approveVisit.bind(null, visit.id)} style={{ display: "inline" }}>
@@ -129,7 +129,7 @@ export default async function StaffDashboardPage() {
             <div className="card" key={visit.id}>
               <p>
                 <strong>{visit.visitor.name}</strong> ({visit.visitor.company || "no company"}) wants to visit{" "}
-                {visit.hostEmployee.name} on {visit.scheduledAt.toLocaleString()}
+                {visit.hostEmployee.name} on {visit.scheduledAt.toLocaleString()} – {visit.scheduledEndAt.toLocaleTimeString()}
               </p>
               <p>Reason: {visit.visitReason}</p>
               <form action={approveVisitByAdmin.bind(null, visit.id)} style={{ display: "inline" }}>
